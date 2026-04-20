@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Build output
+build-cg/
+build-fx/
+*.g3a
+*.g1a
+
+# Editor
+*.swp
+*~
+.vscode/

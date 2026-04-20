@@ -1,0 +1,272 @@
+# .github/workflows/build-cg50.yml
+#
+# Builds the PChem add-in for the Casio fx-CG50.
+#
+# FIX APPLIED (v2):
+#   The fxlibc repository lives under "Vhex-Kernel-Core/fxlibc",
+#   NOT "Lephenixnoir/fxlibc".  This was the sole cause of the
+#   "no such local or remote repository" error.
+#
+# HARDENING APPLIED:
+#   - Retry wrapper around every GiteaPC install (forge can be slow)
+#   - Connectivity pre-check before starting the toolchain build
+#   - Cache key bumped to v2 to invalidate the broken v1 cachi
+#
+# TIMING:
+#   First run: ~45 minutes (compiles sh-elf-gcc from source)
+#   Cached runs: ~1-2 minutes (everything in ~/.local is restored)
+
+name: Build CG50 Add-in
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake git python3 python3-pil python3-pip \
+            libpng-dev libusb-1.0-0-dev libsdl2-dev libncurses-dev \
+            pkg-config wget flex bison texinfo \
+            libgmp-dev libmpfr-dev libmpc-dev
+
+      # Cache the entire toolchain (~800 MB) so we don't rebuild GCC
+      # every push.  Bump the suffix (v2 -> v3) to force a fresh build.
+      - name: Cache fxSDK toolchain
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: fxsdk-toolchain-v2
+
+      - name: Build fxSDK toolchain (cached)
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+
+          # -- Helper: retry a command up to 3 times with 15s delay --
+          # GiteaPC hits the Planete Casio Gitea API, which can be
+          # slow or briefly unreachable from GitHub Actions runners.
+          retry() {
+            local n=1
+            local max=3
+            local delay=15
+            while true; do
+              echo "  [attempt $n/$max] $*"
+              "$@" && break || {
+                if [[ $n -lt $max ]]; then
+                  ((n++))
+                  echo "  Command failed. Retrying in ${delay}s..."
+                  sleep $delay
+                else
+                  echo "  Command failed after $max attempts."
+                  return 1
+                fi
+              }
+            done
+          }
+
+          # -- Pre-check: verify the forge is reachable --
+          echo "=== Checking forge connectivity ==="
+          if ! curl -sf --max-time 30 \
+               "https://gitea.planet-casio.com/api/v1/repos/Lephenixnoir/fxsdk" \
+               -o /dev/null; then
+            echo "ERROR: Cannot reach gitea.planet-casio.com"
+            echo "The Planete Casio forge may be down. Try again later."
+            exit 1
+          fi
+          echo "Forge is reachable."
+
+          # -- Clone GiteaPC --
+          echo "=== Cloning GiteaPC ==="
+          retry git clone https://gitea.planet-casio.com/Lephenixnoir/GiteaPC.git /tmp/GiteaPC
+          cd /tmp/GiteaPC
+
+          # -- Install fxSDK tools (fxsdk, fxgxa, fxconv, fxlink) --
+          # :noudisks2 disables the Linux-only UDisks2 desktop integration
+          # which is unnecessary in a CI environment.
+          echo "=== Installing fxSDK ==="
+          retry python3 giteapc.py install -y Lephenixnoir/fxsdk:noudisks2
+
+          # -- Install the SH cross-compiler --
+          # This downloads binutils 2.42 and GCC sources, then compiles
+          # them targeting the sh3eb-elf (SuperH) architecture.
+          # This is the slowest step (~35 minutes).
+          echo "=== Installing sh-elf-binutils ==="
+          retry python3 giteapc.py install -y Lephenixnoir/sh-elf-binutils
+
+          echo "=== Installing sh-elf-gcc ==="
+          retry python3 giteapc.py install -y Lephenixnoir/sh-elf-gcc
+
+          # -- Install the C runtime libraries --
+          # OpenLibm: math library (libm) for SuperH
+          echo "=== Installing OpenLibm ==="
+          retry python3 giteapc.py install -y Lephenixnoir/OpenLibm
+
+          # fxlibc: C standard library for Casio calculators
+          # *** THIS IS THE FIX ***
+          # fxlibc is owned by "Vhex-Kernel-Core", NOT "Lephenixnoir".
+          # Using the wrong owner was the cause of the original failure.
+          echo "=== Installing fxlibc ==="
+          retry python3 giteapc.py install -y Vhex-Kernel-Core/fxlibc
+
+          # -- Install the gint kernel --
+          # gint is the freestanding unikernel that provides the runtime
+          # (display, keyboard, timers, USB) for fx-CG50 add-ins.
+          echo "=== Installing gint ==="
+          retry python3 giteapc.py install -y Lephenixnoir/gint
+
+          # -- Verify the toolchain --
+          echo ""
+          echo "=== Toolchain verification ==="
+          echo "sh-elf-gcc: $(sh-elf-gcc --version | head -1)"
+          echo "fxsdk:      $(fxsdk --version | head -1)"
+          echo "Pool size:  $(du -sh ~/.local | cut -f1)"
+
+      - name: Add toolchain to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Diagnose and fix repo structure
+        run: |
+          echo "=== Repo root contents ==="
+          ls -la
+          echo ""
+          echo "=== Looking for src/main.c ==="
+          find . -name "main.c" -type f 2>/dev/null
+
+          # Check if source files are at the expected location
+          if [ -f src/main.c ]; then
+            echo "OK: src/main.c found at repo root."
+          elif [ -f pchem-cg50/src/main.c ]; then
+            # SCENARIO A: files nested inside a pchem-cg50/ subdirectory
+            # (happens when zip contents are committed with the folder wrapper)
+            echo "FIXING: src/main.c found inside pchem-cg50/ subdirectory."
+            echo "Moving files up to the repo root..."
+
+            # Move source and include directories up
+            cp -r pchem-cg50/src/ src/
+            cp -r pchem-cg50/include/ include/
+
+            # If CMakeLists.txt is only in the subdirectory, copy it too
+            if [ -f pchem-cg50/CMakeLists.txt ] && [ ! -f CMakeLists.txt ]; then
+              cp pchem-cg50/CMakeLists.txt CMakeLists.txt
+            fi
+
+            echo "Fixed. New layout:"
+            ls -la src/
+          else
+            echo "ERROR: Cannot find main.c anywhere in the repo!"
+            echo "Full file tree:"
+            find . -type f -not -path './.git/*' | head -40
+            exit 1
+          fi
+
+      - name: Create placeholder icons (if missing)
+        run: |
+          mkdir -p assets
+          if [ ! -f assets/icon-uns.png ]; then
+            python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGB', (92, 64), 'white')
+          d = ImageDraw.Draw(img)
+          d.text((20, 24), 'PChem', fill='black')
+          img.save('assets/icon-uns.png')
+          img2 = Image.new('RGB', (92, 64), (30, 60, 180))
+          d2 = ImageDraw.Draw(img2)
+          d2.text((20, 24), 'PChem', fill='white')
+          img2.save('assets/icon-sel.png')
+          "
+            echo "Created placeholder icons."
+          else
+            echo "Icons already exist."
+          fi
+
+      - name: Build the add-in
+        run: |
+          fxsdk build-cg 2>&1
+          echo ""
+          echo "=== Build output diagnostic ==="
+          echo "Looking for .g3a files:"
+          find . -name "*.g3a" -type f 2>/dev/null || echo "  (none found)"
+          echo "Build directory contents:"
+          ls -la build-cg/ 2>/dev/null | head -20 || echo "  (build-cg/ not found)"
+
+      - name: Generate .g3a manually (fallback)
+        if: success()
+        run: |
+          # If generate_g3a() didn't produce the .g3a (because fxgxa
+          # wasn't in cmake's find_program search path at configure time),
+          # invoke fxgxa directly from the shell where PATH is correct.
+          if [ -f build-cg/PChem.g3a ]; then
+            echo "g3a already exists — cmake packaging worked!"
+            ls -la build-cg/PChem.g3a
+            exit 0
+          fi
+
+          echo "g3a not found after cmake build — running fxgxa manually..."
+
+          # Locate the ELF binary that cmake produced
+          ELF="build-cg/pchem"
+          if [ ! -f "$ELF" ]; then
+            echo "ERROR: ELF binary not found at $ELF"
+            ls -la build-cg/
+            exit 1
+          fi
+
+          # Verify fxgxa is available in PATH
+          echo "fxgxa location: $(which fxgxa)"
+          fxgxa --help 2>&1 | head -3 || true
+
+          # Convert the ELF to a raw binary (strip debug sections)
+          sh-elf-objcopy -O binary \
+            -R .bss -R .gint_bss \
+            "$ELF" build-cg/pchem.bin
+          echo "Binary size: $(du -h build-cg/pchem.bin | cut -f1)"
+
+          # Package into .g3a using fxgxa
+          # Try the standard fxgxa syntax (fxSDK 2.10+)
+          fxgxa -o build-cg/PChem.g3a \
+            -n "PChem" \
+            -i uns:assets/icon-uns.png \
+            -i sel:assets/icon-sel.png \
+            build-cg/pchem.bin && {
+              echo "SUCCESS: g3a generated via fxgxa"
+              ls -la build-cg/PChem.g3a
+              exit 0
+          }
+
+          echo "Standard fxgxa syntax failed — trying legacy syntax..."
+          # Fallback: some fxSDK versions use --output instead of -o
+          fxgxa --g3a \
+            --output=build-cg/PChem.g3a \
+            --name="PChem" \
+            --icon-uns=assets/icon-uns.png \
+            --icon-sel=assets/icon-sel.png \
+            build-cg/pchem.bin && {
+              echo "SUCCESS: g3a generated via fxgxa (legacy syntax)"
+              ls -la build-cg/PChem.g3a
+              exit 0
+          }
+
+          echo "ERROR: All fxgxa invocations failed."
+          exit 1
+
+      - name: Upload .g3a artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PChem-g3a
+          path: build-cg/PChem.g3a
+          if-no-files-found: error
