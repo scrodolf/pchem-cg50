@@ -86,15 +86,16 @@ typedef enum {
 
 /* -----------------------------------------------------------------------
  * Number of top-level PChem topics (from the lecture slides)
+ * v4: bumped from 6 -> 7 to add Statistical Mechanics (Lecture 13)
  * ----------------------------------------------------------------------- */
-#define NUM_TOPICS  6
+#define NUM_TOPICS  7
 
 /* Total entries on the main menu = topics + 1 (Navigation) */
 #define NUM_MAIN_MENU_ENTRIES  (NUM_TOPICS + 1)
 
 /* -----------------------------------------------------------------------
  * Topic IDs - index into the topics array
- * These correspond 1:1 to the six lecture groupings in the PDF.
+ * These correspond 1:1 to the lecture groupings in the PDF.
  *
  * TOPIC_NAVIGATION_MARKER is a SENTINEL value used only to tag the
  * "Navigation" entry in the main menu array - it is never used as an
@@ -108,6 +109,7 @@ typedef enum {
     TOPIC_SPECTROSCOPY,     /* IR and rovibrational spectroscopy           */
     TOPIC_HYDROGEN,         /* Hydrogen atom                               */
     TOPIC_MULTIELECTRON,    /* Many-electron atoms, HF, configurations     */
+    TOPIC_STATMECH,         /* Statistical mechanics: Boltzmann, partition */
 
     TOPIC_NAVIGATION_MARKER = 100  /* sentinel for the main-menu router */
 } TopicID;
@@ -122,5 +124,60 @@ typedef enum {
     SUBTOPIC_KEYWORDS,          /* key terms (short definitions)            */
     NUM_SUBTOPICS               /* sentinel - keep last                     */
 } SubtopicID;
+
+/* -----------------------------------------------------------------------
+ * GREEK & MATH GLYPH MACROS
+ * -----------------------------------------------------------------------
+ * String literals containing the fx-CG50 OS multi-byte sequences for
+ * Greek letters and common math symbols.  These can be concatenated into
+ * any C string literal so that prose paragraphs and labels render the
+ * actual glyph instead of the ASCII name.
+ *
+ * Bytes are identical to the entries registered by sym_table_init() in
+ * render.c (see §2 of that file).  Defined here so they are visible to
+ * topics.c and navigation.c at compile time without a function call.
+ *
+ * Usage:  "energy gap " G_DELTA "E for the " G_PSI " ground state"
+ *         -> renders as: energy gap deltaE for the psi ground state
+ *         (with the Greek glyphs in place of "delta" and "psi").
+ * ----------------------------------------------------------------------- */
+/* Lowercase Greek */
+#define G_ALPHA   "\xE5\xA0"
+#define G_BETA    "\xE5\xA1"
+#define G_GAMMA   "\xE5\xA2"
+#define G_DELTA   "\xE5\xA3"
+#define G_EPSILON "\xE5\xA4"
+#define G_THETA   "\xE5\xA8"
+#define G_LAMBDA  "\xE5\xAB"
+#define G_MU      "\xE5\xAC"
+#define G_NU      "\xE5\xAD"
+#define G_PI      "\xE5\xB0"
+#define G_RHO     "\xE5\xB1"
+#define G_SIGMA   "\xE5\xB3"
+#define G_TAU     "\xE5\xB4"
+#define G_PHI     "\xE5\xB6"
+#define G_CHI     "\xE5\xB7"
+#define G_PSI     "\xE5\xB8"
+#define G_OMEGA   "\xE5\xB9"
+
+/* Uppercase Greek */
+#define G_GAMMA_U "\xE5\x83"
+#define G_DELTA_U "\xE5\x84"
+#define G_THETA_U "\xE5\x88"
+#define G_LAMBDA_U "\xE5\x8B"
+#define G_PI_U    "\xE5\x90"
+#define G_SIGMA_U "\xE5\x93"
+#define G_PHI_U   "\xE5\x96"
+#define G_PSI_U   "\xE5\x98"
+#define G_OMEGA_U "\xE5\x99"
+
+/* Math operators */
+#define G_PM      "\xE5\xC0"   /* plus-or-minus */
+#define G_TIMES   "\xE5\xC1"   /* multiplication sign */
+#define G_LEQ     "\xE5\xC4"
+#define G_GEQ     "\xE5\xC5"
+#define G_NEQ     "\xE5\xC6"
+#define G_INF     "\xE5\xD0"
+#define G_RARR    "\xE5\xD1"
 
 #endif /* PCHEM_H */

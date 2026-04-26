@@ -865,6 +865,196 @@ static MathNode *eq_boltzmann_ratio(void)
     return row_of(parts, 3);
 }
 
+/* -------------------------------------------------------------------------
+ * NEW (v4) - TOPIC 6: Statistical Mechanics (Lecture 13)
+ * -------------------------------------------------------------------------
+ * Permutations / combinations, microstate weights, Boltzmann distribution,
+ * partition function, beta = 1/(kT), R = k Na, expectation value.
+ * ------------------------------------------------------------------------- */
+
+/* Permutations with repetition:  N = n^r */
+static MathNode *eq_perm_with_rep(void)
+{
+    MathNode *parts[] = {
+        math_subscript(math_text("N"), math_text("config")),
+        math_text(" = "),
+        math_superscript(math_text("n"), math_text("r"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Permutations without repetition:  N = n! / (n - r)! */
+static MathNode *eq_perm_without_rep(void)
+{
+    MathNode *num_k[] = { math_text("n"), math_text("!") };
+    MathNode *nmr_k[] = {
+        math_text("("), math_text("n"), math_text(" - "),
+        math_text("r"), math_text(")"), math_text("!")
+    };
+    MathNode *parts[] = {
+        math_subscript(math_text("N"), math_text("config")),
+        math_text(" = "),
+        math_fraction(row_of(num_k, 2), row_of(nmr_k, 6))
+    };
+    return row_of(parts, 3);
+}
+
+/* Combinations without repetition:  N = n! / ( r! (n - r)! ) */
+static MathNode *eq_comb_without_rep(void)
+{
+    MathNode *num_k[] = { math_text("n"), math_text("!") };
+    MathNode *nmr_k[] = {
+        math_text("("), math_text("n"), math_text(" - "),
+        math_text("r"), math_text(")"), math_text("!")
+    };
+    MathNode *den_k[] = {
+        math_text("r"), math_text("!"),
+        row_of(nmr_k, 6)
+    };
+    MathNode *parts[] = {
+        math_subscript(math_text("N"), math_text("config")),
+        math_text(" = "),
+        math_fraction(row_of(num_k, 2), row_of(den_k, 3))
+    };
+    return row_of(parts, 3);
+}
+
+/* Microstate weight:  W = N! / (Pi_j a_j!) */
+static MathNode *eq_microstate_weight(void)
+{
+    /* Numerator: N! */
+    MathNode *num_k[] = { math_text("N"), math_text("!") };
+
+    /* Denominator: product (Pi_j) of a_j! */
+    MathNode *den_inner_k[] = {
+        math_subscript(math_text("a"), math_text("j")),
+        math_text("!")
+    };
+    MathNode *den_k[] = {
+        math_symbol("Pi"),
+        math_subscript(math_text(""), math_text("j")),
+        math_text(" "),
+        row_of(den_inner_k, 2)
+    };
+
+    MathNode *parts[] = {
+        math_text("W = "),
+        math_fraction(row_of(num_k, 2), row_of(den_k, 4))
+    };
+    return row_of(parts, 2);
+}
+
+/* Probability of microstate:  P_i = W_i / sum_j W_j */
+static MathNode *eq_microstate_probability(void)
+{
+    MathNode *sum_body = math_subscript(math_text("W"), math_text("j"));
+    MathNode *sum = math_summation(math_text("j"), NULL, sum_body);
+
+    MathNode *parts[] = {
+        math_subscript(math_text("P"), math_text("i")),
+        math_text(" = "),
+        math_fraction(
+            math_subscript(math_text("W"), math_text("i")),
+            sum)
+    };
+    return row_of(parts, 3);
+}
+
+/* Boltzmann distribution:  p_i = e^(-beta epsilon_i) / q */
+static MathNode *eq_boltzmann_distribution(void)
+{
+    MathNode *exp_arg_k[] = {
+        math_text("-"),
+        math_symbol("beta"),
+        math_subscript(math_symbol("epsilon"), math_text("i"))
+    };
+    MathNode *exp_part = math_superscript(math_text("e"),
+                                          row_of(exp_arg_k, 3));
+    MathNode *parts[] = {
+        math_subscript(math_text("p"), math_text("i")),
+        math_text(" = "),
+        math_fraction(exp_part, math_text("q"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Partition function:  q = sum_i e^(-beta epsilon_i) */
+static MathNode *eq_partition_function(void)
+{
+    MathNode *exp_arg_k[] = {
+        math_text("-"),
+        math_symbol("beta"),
+        math_subscript(math_symbol("epsilon"), math_text("i"))
+    };
+    MathNode *exp_part = math_superscript(math_text("e"),
+                                          row_of(exp_arg_k, 3));
+    MathNode *sum = math_summation(math_text("i"), NULL, exp_part);
+    MathNode *parts[] = {
+        math_text("q = "), sum
+    };
+    return row_of(parts, 2);
+}
+
+/* Beta factor:  beta = 1 / (kT) */
+static MathNode *eq_beta_factor(void)
+{
+    MathNode *parts[] = {
+        math_symbol("beta"),
+        math_text(" = "),
+        math_fraction(math_number("1"), math_text("kT"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Boltzmann constant:  R = k Na  =>  k = R / Na */
+static MathNode *eq_boltzmann_constant(void)
+{
+    MathNode *parts[] = {
+        math_text("R = k "),
+        math_subscript(math_text("N"), math_text("A")),
+        math_text("    =>    k = "),
+        math_fraction(math_text("R"),
+                      math_subscript(math_text("N"), math_text("A")))
+    };
+    return row_of(parts, 4);
+}
+
+/* Expectation value:  <x> = sum_i p_i x_i */
+static MathNode *eq_expectation_value(void)
+{
+    MathNode *body_k[] = {
+        math_subscript(math_text("p"), math_text("i")),
+        math_subscript(math_text("x"), math_text("i"))
+    };
+    MathNode *sum = math_summation(math_text("i"), NULL, row_of(body_k, 2));
+    MathNode *parts[] = {
+        math_text("<x> = "), sum
+    };
+    return row_of(parts, 2);
+}
+
+/* 2-level Boltzmann ratio:  p1 = (e^(DeltaE/kT) + 1)^(-1) */
+static MathNode *eq_two_level_population(void)
+{
+    MathNode *DeltaE_k[] = {
+        math_symbol("Delta"), math_text("E")
+    };
+    MathNode *exp_part = math_superscript(
+        math_text("e"),
+        math_fraction(row_of(DeltaE_k, 2), math_text("kT")));
+    MathNode *paren_inner_k[] = {
+        exp_part, math_text(" + "), math_number("1")
+    };
+    MathNode *parts[] = {
+        math_subscript(math_text("p"), math_number("1")),
+        math_text(" = "),
+        math_superscript(math_paren(row_of(paren_inner_k, 3)),
+                         math_text("-1"))
+    };
+    return row_of(parts, 3);
+}
+
+
 /* =========================================================================
  * §3  TOPIC CONTENT ARRAYS
  * ========================================================================= */
@@ -1004,8 +1194,8 @@ static const char *desc_spectroscopy =
     "(J = 0 through about 12) are populated at once.\n\n"
     "IR absorption stimulates simultaneous rotational AND vibrational "
     "transitions. The resulting spectrum shows two branches: the "
-    "R-branch (Delta J = +1) on the high-frequency side and the "
-    "P-branch (Delta J = -1) on the low-frequency side. The branch "
+    "R-branch (" G_DELTA_U "J = +1) on the high-frequency side and the "
+    "P-branch (" G_DELTA_U "J = -1) on the low-frequency side. The branch "
     "spacing is proportional to the rotational constant B, so measuring "
     "either branch gives the bond length directly.";
 
@@ -1073,25 +1263,25 @@ static const KeywordEntry kws_spectroscopy[] = {
 static const char *desc_hydrogen =
     "The Bohr model reproduces hydrogen energies but not wavefunctions. "
     "Solving the Schrodinger equation in spherical polar coordinates "
-    "(rho, theta, phi) yields all orbitals, their degeneracies, and the "
-    "full angular and radial structure.\n\n"
+    "(" G_RHO ", " G_THETA ", " G_PHI ") yields all orbitals, their "
+    "degeneracies, and the full angular and radial structure.\n\n"
     "The Hamiltonian splits into kinetic and potential parts. Changing "
     "to spherical polar coordinates separates the problem into three "
     "independent 1D differential equations.\n\n"
-    "The wavefunction factorises as psi(rho, theta, phi) = "
-    "R_nl(rho) Y_lm(theta, phi). The angular part Y_lm consists of "
-    "spherical harmonics which directly give the geometric shapes of "
-    "s, p and d orbitals. The radial part R_nl balances an attractive "
-    "electrostatic potential against a repulsive centripetal term; its "
-    "solutions involve Laguerre polynomials and the Bohr radius a0 as "
-    "the natural length scale.\n\n"
-    "The 1s ground state is spherically symmetric: psi_1s = "
-    "(1 / sqrt(pi a0^3)) exp(-r/a0). The radial probability of finding "
-    "the electron in a shell of radius r and thickness dr is "
-    "P_1s(r) dr = psi* psi r^2 dr, where the r^2 Jacobian comes from "
-    "the spherical volume element. Setting d/dr P_1s(r) = 0 yields the "
-    "most probable radius r_mp = a0: the electron is most likely found "
-    "at exactly the Bohr radius from the nucleus.";
+    "The wavefunction factorises as " G_PSI "(" G_RHO ", " G_THETA ", "
+    G_PHI ") = R_nl(" G_RHO ") Y_lm(" G_THETA ", " G_PHI "). The angular "
+    "part Y_lm consists of spherical harmonics which directly give the "
+    "geometric shapes of s, p and d orbitals. The radial part R_nl "
+    "balances an attractive electrostatic potential against a repulsive "
+    "centripetal term; its solutions involve Laguerre polynomials and "
+    "the Bohr radius a0 as the natural length scale.\n\n"
+    "The 1s ground state is spherically symmetric: " G_PSI "_1s = "
+    "(1 / sqrt(" G_PI " a0^3)) exp(-r/a0). The radial probability of "
+    "finding the electron in a shell of radius r and thickness dr is "
+    "P_1s(r) dr = " G_PSI "* " G_PSI " r^2 dr, where the r^2 Jacobian "
+    "comes from the spherical volume element. Setting d/dr P_1s(r) = 0 "
+    "yields the most probable radius r_mp = a0: the electron is most "
+    "likely found at exactly the Bohr radius from the nucleus.";
 
 static const EquationEntry eqs_hydrogen[] = {
     { "Total Hamiltonian",
@@ -1175,15 +1365,16 @@ static const char *desc_multielectron =
     "as a simple product of separable 1-electron wavefunctions. This "
     "would be exact only if electron-electron repulsion were absent.\n\n"
     "The Variation Theorem states that the true energy can be "
-    "approached from above using a trial wavefunction Phi that obeys "
-    "the correct boundary conditions. In the Self-Consistent Field "
+    "approached from above using a trial wavefunction " G_PHI_U " that "
+    "obeys the correct boundary conditions. In the Self-Consistent Field "
     "(Hartree-Fock) approximation, each electron feels an averaged "
     "effective field produced by all the others, yielding a one-electron "
     "Hamiltonian that is solved iteratively until self-consistency.\n\n"
     "Antisymmetry under electron exchange is enforced by a Slater "
     "determinant of spin-orbitals: rows label electrons, columns label "
-    "spin-orbitals (e.g. 1s-alpha, 1s-beta, 2s-alpha, 2s-beta for Be), "
-    "and the normalisation prefactor is 1/sqrt(N!).\n\n"
+    "spin-orbitals (e.g. 1s-" G_ALPHA ", 1s-" G_BETA ", 2s-" G_ALPHA
+    ", 2s-" G_BETA " for Be), and the normalisation prefactor is "
+    "1/sqrt(N!).\n\n"
     "For molecules the Hamiltonian adds nucleus-nucleus repulsion and "
     "two-centre electron-nucleus terms. Molecular orbitals are built "
     "as linear combinations of atomic orbitals (LCAO-MO). The overlap "
@@ -1193,9 +1384,9 @@ static const char *desc_multielectron =
     "ungerade) MO, c_u = 1/sqrt(2(1 - S_12)).\n\n"
     "Hybrid orbitals (sp, sp2, sp3) are built on a single atom from "
     "atomic orbitals subject to three constraints: normalisation "
-    "(|c|^2 = 1), orthogonality (<psi_i|psi_j> = 0 for i != j), and "
-    "equal contribution (each atomic orbital contributes equally to "
-    "the full hybrid set).";
+    "(|c|^2 = 1), orthogonality (<" G_PSI "_i|" G_PSI "_j> = 0 for "
+    "i != j), and equal contribution (each atomic orbital contributes "
+    "equally to the full hybrid set).";
 
 static const EquationEntry eqs_multielectron[] = {
     { "Helium Hamiltonian",
@@ -1359,9 +1550,9 @@ static const char *desc_pib =
     "extends to 2D and 3D boxes, and underlies the band theory of "
     "solids.\n\n"
     "The 1D-box formula is also used to estimate HOMO and LUMO energies "
-    "of conjugated pi-systems. Combining E_n with the Boltzmann "
+    "of conjugated " G_PI "-systems. Combining E_n with the Boltzmann "
     "distribution gives the thermal population of each level at "
-    "temperature T: the ratio p_LUMO / p_HOMO = exp(-Delta E / kT).";
+    "temperature T: the ratio p_LUMO / p_HOMO = exp(-" G_DELTA_U "E / kT).";
 
 static const char *desc_commutators =
     "Two quantum observables can be simultaneously known only if their "
@@ -1371,19 +1562,180 @@ static const char *desc_commutators =
     "their uncertainties. For position and momentum this is the "
     "Heisenberg Uncertainty Principle.\n\n"
     "Electron spin is an intrinsic angular momentum with no classical "
-    "analogue. Spin-1/2 particles have two basis states (alpha and "
-    "beta), demonstrated by the Stern-Gerlach experiment.";
+    "analogue. Spin-1/2 particles have two basis states (" G_ALPHA " and "
+    G_BETA "), demonstrated by the Stern-Gerlach experiment.";
 
 static const char *desc_oscillator =
     "The quantum harmonic oscillator has equally spaced energy levels "
-    "separated by hbar*omega; its wavefunctions are Hermite polynomials "
-    "modulated by a Gaussian envelope.\n\n"
+    "separated by " G_OMEGA " (with the reduced Planck constant " G_OMEGA
+    " factor); its wavefunctions are Hermite polynomials modulated by a "
+    "Gaussian envelope.\n\n"
     "The rigid rotor models a diatomic molecule as two fixed-distance "
     "masses rotating in space. Its levels depend on the moment of "
     "inertia I and the quantum number J.\n\n"
     "Together these two models -- oscillator for vibration, rotor for "
     "rotation -- describe most of the vibrational and rotational "
     "behaviour of diatomic molecules.";
+
+/* ---------- TOPIC 6: STATISTICAL MECHANICS (LECTURE 13) ---------- */
+
+static const char *desc_statmech =
+    "Statistical mechanics connects the microscopic energy levels of "
+    "molecules to the macroscopic, observable thermodynamic state of "
+    "a system.  At thermal equilibrium the way energy is distributed "
+    "across particles is uniquely determined by temperature.\n\n"
+    "Counting microstates uses ideas from combinatorics. Permutations "
+    "count ordered sequences (with repetition: " G_PI "^r; without "
+    "repetition: n! / (n - r)!).  Combinations count unordered "
+    "selections (without repetition: n! / (r! (n - r)!)).\n\n"
+    "When N particles are distributed across energy levels with "
+    "occupations a0, a1, a2, ..., the number of microstates that all "
+    "share that occupation pattern is the WEIGHT W = N! / (a0! a1! ...).  "
+    "The probability of seeing a given configuration is its weight "
+    "divided by the sum of all weights.\n\n"
+    "For a large (Avogadro) number of particles the configuration with "
+    "the LARGEST weight overwhelmingly dominates: it is the only one "
+    "ever observed.  Maximising W subject to fixed N and fixed total "
+    "energy (using the Stirling approximation and Lagrange multipliers "
+    G_ALPHA " and " G_BETA ") yields the Boltzmann distribution.\n\n"
+    "The Boltzmann distribution states that the population of energy "
+    "level i is p_i = exp(-" G_BETA " " G_EPSILON "_i) / q, where the "
+    "PARTITION FUNCTION q = sum exp(-" G_BETA " " G_EPSILON "_i) "
+    "normalises the populations.  Examining limits gives "
+    G_BETA " = 1/(kT) where k is the Boltzmann constant.\n\n"
+    "Practical consequences: at room temperature, transitions with "
+    G_DELTA_U "E < kT have nearly equal upper and lower populations "
+    "(NMR), transitions with " G_DELTA_U "E ~ kT have unequal but "
+    "noticeable populations (rotation/vibration in IR), and "
+    "transitions with " G_DELTA_U "E >> kT have a fully populated "
+    "ground state (electronic UV/Vis).\n\n"
+    "Spectroscopy can transiently push populations away from the "
+    "Boltzmann equilibrium, but the system will always relax back to "
+    "the Boltzmann distribution.";
+
+static const EquationEntry eqs_statmech[] = {
+    { "Permutations (with repetition)",
+      eq_perm_with_rep,
+      "N_config : number of ordered sequences\n"
+      "n        : items to choose from\n"
+      "r        : items selected\n"
+      "Items may be reused (e.g. combination-lock dial)." },
+    { "Permutations (without repetition)",
+      eq_perm_without_rep,
+      "N_config : number of ordered sequences\n"
+      "n!       : factorial of total items\n"
+      "(n-r)!   : factorial of leftover items\n"
+      "Each item used at most once." },
+    { "Combinations (without repetition)",
+      eq_comb_without_rep,
+      "N_config : number of unordered selections\n"
+      "n        : items to choose from\n"
+      "r        : items selected\n"
+      "Same as permutations divided by r! (order ignored)." },
+    { "Microstate Weight W",
+      eq_microstate_weight,
+      "W   : number of microstates with this occupation pattern\n"
+      "N   : total particles, N = sum a_j\n"
+      "a_j : occupation of energy level j\n"
+      "Pi_j a_j! : product of factorials over all levels." },
+    { "Microstate Probability",
+      eq_microstate_probability,
+      "P_i  : probability of configuration i\n"
+      "W_i  : weight (microstate count) of configuration i\n"
+      "Sum  : over all configurations j of the system\n"
+      "The configuration with the largest W_i dominates." },
+    { "Boltzmann Distribution p_i",
+      eq_boltzmann_distribution,
+      "p_i        : population of energy level i\n"
+      "beta       : 1 / (kT)\n"
+      "epsilon_i  : energy of level i\n"
+      "q          : partition function (normalisation)" },
+    { "Partition Function q",
+      eq_partition_function,
+      "q          : sum of Boltzmann factors over levels\n"
+      "beta       : 1 / (kT)\n"
+      "epsilon_i  : energy of level i\n"
+      "Normalises the populations so that sum p_i = 1." },
+    { "Beta Factor",
+      eq_beta_factor,
+      "beta : Lagrange multiplier from maximising W\n"
+      "k    : Boltzmann constant\n"
+      "T    : absolute temperature (K)\n"
+      "Limits: beta -> infinity at 0 K (all in ground)\n"
+      "        beta -> 0 at infinity K (uniform pop.)" },
+    { "Boltzmann Constant",
+      eq_boltzmann_constant,
+      "R   : ideal-gas constant (8.314 J/mol/K)\n"
+      "k   : Boltzmann constant (1.381e-23 J/K)\n"
+      "N_A : Avogadro's number (6.022e23 /mol)\n"
+      "k = R / N_A relates per-mole and per-particle." },
+    { "Expectation Value",
+      eq_expectation_value,
+      "<x> : weighted average of observable x\n"
+      "p_i : Boltzmann population of level i\n"
+      "x_i : value of observable in level i\n"
+      "Generalises 'arithmetic mean' to weighted measurements." },
+    { "Two-Level Population",
+      eq_two_level_population,
+      "p_1   : population of upper level\n"
+      "DeltaE: E1 - E0 (energy gap)\n"
+      "k     : Boltzmann constant\n"
+      "T     : absolute temperature (K)\n"
+      "p_0 = 1 - p_1.  At 298 K: NMR (500 MHz) p_1 ~ 0.5,\n"
+      "IR (500 GHz) p_1 ~ 0.48, UV (500 THz) p_1 ~ 0." },
+};
+
+static const KeywordEntry kws_statmech[] = {
+    { "Microstate",
+      "A specific assignment of energy quanta to particles.  Many "
+      "microstates can share the same level-occupation pattern; "
+      "their count is the weight W of that configuration." },
+    { "Configuration",
+      "A particular pattern of occupation numbers (a0, a1, a2, ...) "
+      "across energy levels, ignoring which specific particle is in "
+      "which level." },
+    { "Permutation (with repetition)",
+      "Ordered sequence in which items may be reused.  Count = n^r." },
+    { "Permutation (without repetition)",
+      "Ordered sequence in which each item is used at most once.  "
+      "Count = n! / (n - r)!." },
+    { "Combination (without repetition)",
+      "Unordered selection in which each item is used at most once.  "
+      "Count = n! / (r! (n - r)!) = binomial(n, r)." },
+    { "Weight W",
+      "Number of microstates that share a given occupation pattern.  "
+      "W = N! / (Pi_j a_j!)." },
+    { "Dominant Configuration",
+      "Configuration with the largest weight.  At Avogadro-scale "
+      "particle numbers it is the only configuration ever observed." },
+    { "Stirling Approximation",
+      "ln N! ~ N ln N - N for large N.  Used to convert factorials "
+      "into smooth functions that can be maximised by calculus." },
+    { "Lagrange Multipliers (alpha, beta)",
+      "Auxiliary variables that enforce the constraints of fixed N "
+      "(alpha) and fixed total energy (beta) when maximising ln W." },
+    { "Boltzmann Distribution",
+      "p_i = exp(-beta epsilon_i) / q.  Probability that any one "
+      "particle occupies energy level i at thermal equilibrium." },
+    { "Partition Function (q)",
+      "Sum of Boltzmann factors over all levels.  Normalises the "
+      "populations and encodes the system's thermodynamics." },
+    { "Beta Factor",
+      "beta = 1 / (kT).  Sets the scale on which energy gaps "
+      "compete with thermal energy." },
+    { "Boltzmann Constant (k)",
+      "k = R / N_A = 1.38065e-23 J/K.  Per-particle gas constant." },
+    { "Degeneracy (g_i)",
+      "Number of distinct microstates sharing the same energy.  "
+      "Degenerate levels enter the partition function with weight g_i." },
+    { "Expectation Value",
+      "<x> = sum p_i x_i.  Population-weighted average of an "
+      "observable x." },
+    { "Thermal Equilibrium",
+      "State in which the populations follow the Boltzmann "
+      "distribution.  Spectroscopy can perturb the populations, but "
+      "the system always relaxes back to equilibrium." },
+};
 
 /* Topic titles (also used in the menu) */
 static const char *topic_titles[NUM_TOPICS] = {
@@ -1393,6 +1745,7 @@ static const char *topic_titles[NUM_TOPICS] = {
     "Diatomic Spectroscopy",
     "Hydrogen Atom",
     "Many-Electron Atoms",
+    "Statistical Mechanics",
 };
 
 /* Master TopicContent table */
@@ -1455,6 +1808,16 @@ static const TopicContent topic_table[NUM_TOPICS] = {
         .num_keywords      = (int)(sizeof(kws_multielectron)
                                    / sizeof(kws_multielectron[0])),
     },
+    {   /* 6 */
+        .title             = "Statistical Mechanics",
+        .description_block = NULL,
+        .equations         = eqs_statmech,
+        .num_equations     = (int)(sizeof(eqs_statmech)
+                                   / sizeof(eqs_statmech[0])),
+        .keywords          = kws_statmech,
+        .num_keywords      = (int)(sizeof(kws_statmech)
+                                   / sizeof(kws_statmech[0])),
+    },
 };
 
 /* Because C cannot use aggregate initialisers to link to function-local
@@ -1472,6 +1835,7 @@ const TopicContent *topic_content(TopicID id)
         case TOPIC_SPECTROSCOPY:  out.description_block = desc_spectroscopy; break;
         case TOPIC_HYDROGEN:      out.description_block = desc_hydrogen; break;
         case TOPIC_MULTIELECTRON: out.description_block = desc_multielectron; break;
+        case TOPIC_STATMECH:      out.description_block = desc_statmech; break;
         default:                  out.description_block = ""; break;
     }
     return &out;
@@ -1626,14 +1990,34 @@ static int draw_equations(const TopicContent *tc, int x, int y, int max_w,
         if (draw) dtext(x, cy, COL_ACCENT, eq->label);
         cy += BODY_LINE_H + 2;
 
-        /* Render the math expression */
+        /* Render the math expression.
+         *
+         * v4 fix: when the laid-out tree is wider than the available
+         * content width (typically because of long Hamiltonians like the
+         * Helium or general molecular Hamiltonian), force every node to
+         * FONT_SMALL and re-layout.  This trades visual size for full
+         * visibility, so users no longer see the right edge of the
+         * equation cut off by the screen boundary.
+         */
         if (eq->builder) {
             MathNode *tree = eq->builder();
             if (tree) {
+                int eq_indent = 8;
+                int avail_w   = max_w - eq_indent;
+
                 render_layout(tree);
+
+                if (tree->layout.w > avail_w) {
+                    /* Demote the entire subtree and recompute */
+                    render_force_tier(tree, FONT_SMALL);
+                    render_layout(tree);
+                }
+
                 if (draw) {
-                    int ex = x + 8;
-                    if (ex + tree->layout.w > x + max_w) ex = x;
+                    int ex = x + eq_indent;
+                    /* If still wider than viewport (extreme case),
+                     * left-align so as much as possible is visible. */
+                    if (tree->layout.w > avail_w) ex = x;
                     render_draw(tree, ex, cy);
                 }
                 cy += tree->layout.h + 4;

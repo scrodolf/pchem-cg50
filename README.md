@@ -4,6 +4,29 @@ A six-topic educational add-in covering quantum mechanics, spectroscopy,
 and many-electron atoms. Built on the modern **fxSDK + gint** stack with
 a custom 2D math rendering engine.
 
+## v4 updates
+
+* **Statistical Mechanics tab (Lecture 13):** new 7th topic covering
+  microstates, permutations / combinations, weight W = N!/Pi a_j!,
+  microstate probability P_i, Boltzmann distribution, partition
+  function q, beta = 1/(kT), R = k N_A, expectation value, two-level
+  populations.
+* **Greek-letter prose rendering:** all six topic description blocks now
+  embed actual OS-font Greek glyphs (psi, phi, Delta, alpha, ...) via
+  byte-literal macros declared in pchem.h, instead of ASCII names.
+* **Cut-off equation fix:** equations whose laid-out width exceeds the
+  available content area are now auto-demoted to FONT_SMALL so the
+  Helium and molecular Hamiltonians stay visible end-to-end on the
+  396-pixel screen.
+
+## v3 updates
+
+* **HW 9-14 content:** 1s orbital + radial probability + most probable
+  radius, Slater determinant, multi-electron / multi-nuclei
+  Hamiltonian, overlap integral S_12, c_g and c_u coefficients,
+  sp hybrid orbital construction, normalization / orthogonality /
+  equal-contribution constraints, Boltzmann population ratio.
+
 ## v2 updates
 
 * **Hierarchical menu:** every topic now leads to a submenu offering

@@ -1395,6 +1395,91 @@ void render_draw(const MathNode *node, int x, int y)
 
 
 /* #########################################################################
+ * §8.5: TIER OVERRIDE WALKER (added in v4 for cut-off equation fix)
+ * #########################################################################
+ *
+ * Recursively sets `font_tier` on every node in a subtree.  Used by the
+ * topic renderer when an equation's bounding box overflows the screen
+ * width: demote NORMAL -> SMALL, then call render_layout() again to get
+ * the smaller bbox before drawing.
+ *
+ * This walker mirrors the structural recursion in render_layout(): for
+ * each compound node type we descend into ALL relevant children so even
+ * deeply nested subtrees pick up the tier change.
+ * ######################################################################### */
+
+void render_force_tier(MathNode *node, FontTier tier)
+{
+    if (!node) return;
+    node->font_tier = tier;
+
+    switch (node->type) {
+    case MATH_TEXT:
+    case MATH_NUMBER:
+    case MATH_SYMBOL:
+    case MATH_ARROW:
+        /* leaves -- nothing to recurse into */
+        break;
+
+    case MATH_FRACTION:
+        render_force_tier(node->d.frac.numerator,   tier);
+        render_force_tier(node->d.frac.denominator, tier);
+        break;
+
+    case MATH_SUPERSCRIPT:
+    case MATH_SUBSCRIPT:
+        render_force_tier(node->d.script.base,   tier);
+        render_force_tier(node->d.script.script, tier);
+        break;
+
+    case MATH_SQRT:
+        render_force_tier(node->d.sqrt.radicand, tier);
+        break;
+
+    case MATH_PAREN:
+        render_force_tier(node->d.paren.inner, tier);
+        break;
+
+    case MATH_ROW:
+        for (int i = 0; i < node->d.row.count; i++)
+            render_force_tier(node->d.row.children[i], tier);
+        break;
+
+    case MATH_INTEGRAL:
+    case MATH_SUMMATION:
+        render_force_tier(node->d.bigop.lower, tier);
+        render_force_tier(node->d.bigop.upper, tier);
+        render_force_tier(node->d.bigop.body,  tier);
+        break;
+
+    case MATH_BRA:
+    case MATH_KET:
+        render_force_tier(node->d.bracket.content, tier);
+        break;
+
+    case MATH_BRAKET:
+        render_force_tier(node->d.braket.bra, tier);
+        render_force_tier(node->d.braket.ket, tier);
+        break;
+
+    case MATH_SANDWICH:
+        render_force_tier(node->d.sandwich.bra, tier);
+        render_force_tier(node->d.sandwich.op,  tier);
+        render_force_tier(node->d.sandwich.ket, tier);
+        break;
+
+    case MATH_HAT:
+    case MATH_BAR:
+        render_force_tier(node->d.accent.child, tier);
+        break;
+
+    default:
+        break;
+    }
+}
+
+
+/* #########################################################################
  * §9: DEBUG UTILITIES
  * ######################################################################### */
 

@@ -203,6 +203,14 @@ MathNode *math_arrow(void);
 void render_layout(MathNode *node);
 void render_draw(const MathNode *node, int x, int y);
 
+/* Force every node in a subtree to use the given FontTier.  Useful when
+ * a layout overflows the available width: call this and re-run
+ * render_layout() to obtain a smaller bounding box.  Note that this
+ * overrides the auto-demotion that render_layout() does for scripts and
+ * bigop limits, so callers should normally only demote to FONT_SMALL
+ * (i.e. demote a NORMAL tree to SMALL when it overflows). */
+void render_force_tier(MathNode *node, FontTier tier);
+
 /* Debug utility: return human-readable name for a node type */
 const char *render_type_name(MathNodeType type);
 

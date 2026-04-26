@@ -161,6 +161,15 @@ static const NavSymbol syms_multielectron[] = {
     { "epsilon","epsilon vacuum permittivity" },
 };
 
+static const NavSymbol syms_statmech[] = {
+    { "alpha",  "alpha   Lagrange multiplier (N constraint)" },
+    { "beta",   "beta    Lagrange multiplier = 1 / (kT)" },
+    { "epsilon","epsilon energy of a level" },
+    { "Pi",     "Pi      product (over levels)" },
+    { "Sigma",  "Sigma   sum (over levels)" },
+    { "Delta",  "Delta   energy gap (DeltaE = E1 - E0)" },
+};
+
 /* Topic -> symbol list dispatch */
 static const NavSymbol *topic_symbols(TopicID id, int *count)
 {
@@ -185,6 +194,9 @@ static const NavSymbol *topic_symbols(TopicID id, int *count)
         *count = (int)(sizeof(syms_multielectron)
                        / sizeof(syms_multielectron[0]));
         return syms_multielectron;
+    case TOPIC_STATMECH:
+        *count = (int)(sizeof(syms_statmech) / sizeof(syms_statmech[0]));
+        return syms_statmech;
     default:
         *count = 0;
         return NULL;

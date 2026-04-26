@@ -48,6 +48,7 @@ static const MenuItem main_menu_items[NUM_MAIN_MENU_ENTRIES] = {
     { "4. Diatomic Spectroscopy", (int)TOPIC_SPECTROSCOPY  },
     { "5. Hydrogen Atom",         (int)TOPIC_HYDROGEN      },
     { "6. Many-Electron Atoms",   (int)TOPIC_MULTIELECTRON },
+    { "7. Statistical Mechanics", (int)TOPIC_STATMECH      },
     { "* Navigation (All Terms)", (int)TOPIC_NAVIGATION_MARKER },
 };
 
