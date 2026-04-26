@@ -211,6 +211,14 @@ void render_draw(const MathNode *node, int x, int y);
  * (i.e. demote a NORMAL tree to SMALL when it overflows). */
 void render_force_tier(MathNode *node, FontTier tier);
 
+/* If `word` (a non-NUL-terminated buffer of `len` bytes) exactly matches a
+ * known Greek transliteration ("psi", "Phi", "Delta", "alpha", ...), this
+ * returns a pointer to the OS multi-byte string for that glyph and sets
+ * *out_len to the byte length of the OS sequence (always 2 for our
+ * symbols).  Returns NULL if no match - caller should render the original
+ * word unchanged.  Matches are case-sensitive ("Pi" != "pi"). */
+const char *greek_substitute_word(const char *word, int len, int *out_len);
+
 /* Debug utility: return human-readable name for a node type */
 const char *render_type_name(MathNodeType type);
 

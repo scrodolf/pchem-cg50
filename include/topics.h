@@ -95,6 +95,11 @@ typedef struct {
     SubtopicID  subtopic;       /* Which subsection is shown               */
     int         scroll_y;       /* Current scroll offset in pixels         */
     int         content_h;      /* Total rendered content height           */
+
+    /* v5 long-press tracking */
+    int         held_key;
+    int         held_count;
+    int         jumped;
 } TopicScreen;
 
 /* -----------------------------------------------------------------------

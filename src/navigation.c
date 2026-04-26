@@ -56,7 +56,20 @@ static int nav_draw_wrapped(const char *text, int x, int start_y,
         int is_newline = (*p == '\n');
 
         if (is_space || is_newline || is_end) {
-            int needed = line_w + (line_len > 0 ? NAV_CHAR_W : 0) + word_w;
+            /* v5: Greek-transliteration substitution */
+            const char *render_bytes = word_start;
+            int         render_len   = word_len;
+            int         render_w     = word_w;
+            int         sub_len      = 0;
+            const char *sub = greek_substitute_word(word_start, word_len,
+                                                    &sub_len);
+            if (sub) {
+                render_bytes = sub;
+                render_len   = sub_len;
+                render_w     = NAV_MULTIBYTE_W;
+            }
+
+            int needed = line_w + (line_len > 0 ? NAV_CHAR_W : 0) + render_w;
             if (needed > max_w && line_len > 0) {
                 line_buf[line_len] = '\0';
                 if (draw) dtext(x, cur_y, color, line_buf);
@@ -68,11 +81,11 @@ static int nav_draw_wrapped(const char *text, int x, int start_y,
                 line_buf[line_len++] = ' ';
                 line_w += NAV_CHAR_W;
             }
-            if (word_len > 0 &&
-                line_len + word_len < (int)sizeof(line_buf)) {
-                memcpy(line_buf + line_len, word_start, word_len);
-                line_len += word_len;
-                line_w += word_w;
+            if (render_len > 0 &&
+                line_len + render_len < (int)sizeof(line_buf)) {
+                memcpy(line_buf + line_len, render_bytes, render_len);
+                line_len += render_len;
+                line_w += render_w;
             }
             if (is_newline) {
                 line_buf[line_len] = '\0';
@@ -267,8 +280,11 @@ static int nav_section(TopicID id, int x, int y, int max_w, int draw)
 
 void navigation_init(NavigationScreen *ns)
 {
-    ns->scroll_y = 0;
-    ns->content_h = 0;
+    ns->scroll_y   = 0;
+    ns->content_h  = 0;
+    ns->held_key   = 0;
+    ns->held_count = 0;
+    ns->jumped     = 0;
 }
 
 void navigation_draw(NavigationScreen *ns)
@@ -308,8 +324,26 @@ void navigation_draw(NavigationScreen *ns)
 
 int navigation_handle_key(NavigationScreen *ns, key_event_t ev)
 {
+    /* v5 rules: long-press UP/DOWN jumps to top/bottom; LEFT/RIGHT scroll
+     * one line on KEYEV_DOWN only (no auto-repeat). */
     if (ev.type != KEYEV_DOWN && ev.type != KEYEV_HOLD)
         return 0;
+
+    if (ev.type == KEYEV_DOWN) {
+        ns->held_key   = ev.key;
+        ns->held_count = 0;
+        ns->jumped     = 0;
+    } else if (ev.type == KEYEV_HOLD) {
+        if (ev.key == ns->held_key) {
+            ns->held_count++;
+        } else {
+            ns->held_key   = ev.key;
+            ns->held_count = 0;
+            ns->jumped     = 0;
+        }
+    }
+    int is_long_press = (ev.type == KEYEV_HOLD &&
+                         ns->held_count >= 2 && !ns->jumped);
 
     int page  = SCREEN_H - HEADER_H - FOOTER_H;
     int limit = ns->content_h - page;
@@ -317,12 +351,36 @@ int navigation_handle_key(NavigationScreen *ns, key_event_t ev)
 
     switch (ev.key) {
     case KEY_UP:
-        ns->scroll_y -= 18;
-        if (ns->scroll_y < 0) ns->scroll_y = 0;
+        if (is_long_press) {
+            ns->scroll_y = 0;
+            ns->jumped   = 1;
+        } else if (!ns->jumped) {
+            ns->scroll_y -= 18;
+            if (ns->scroll_y < 0) ns->scroll_y = 0;
+        }
         return 0;
     case KEY_DOWN:
-        ns->scroll_y += 18;
-        if (ns->scroll_y > limit) ns->scroll_y = limit;
+        if (is_long_press) {
+            ns->scroll_y = limit;
+            ns->jumped   = 1;
+        } else if (!ns->jumped) {
+            ns->scroll_y += 18;
+            if (ns->scroll_y > limit) ns->scroll_y = limit;
+        }
+        return 0;
+    case KEY_LEFT:
+        if (ev.type == KEYEV_DOWN) {
+            ns->scroll_y -= 18;
+            if (ns->scroll_y < 0) ns->scroll_y = 0;
+        }
+        return 0;
+    case KEY_RIGHT:
+        if (ev.type == KEYEV_DOWN) {
+            if (ns->scroll_y < limit) {
+                ns->scroll_y += 18;
+                if (ns->scroll_y > limit) ns->scroll_y = limit;
+            }
+        }
         return 0;
     case KEY_F1:
         ns->scroll_y -= page;

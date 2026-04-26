@@ -216,6 +216,54 @@ int sym_width(const char *name)
     return (int)strlen(name) * 9;   /* fallback: ~9px per ASCII char */
 }
 
+/* -----------------------------------------------------------------------
+ * greek_substitute_word - prose-side glyph substitution
+ *
+ * Looks up exactly the (word, len) span in the symbol table.  We only
+ * substitute a curated subset of the symbol table (just the Greek
+ * letters and a few math operators) so that ASCII identifiers like
+ * "Phi" inside variable names ("Phi_2s") never get spuriously matched
+ * because callers always pass whole-word spans split on whitespace.
+ *
+ * Returns the OS multi-byte string for the glyph on match, NULL on
+ * miss.  *out_len is set to the byte length of the returned string
+ * (always 2 for our OS sequences).
+ * ----------------------------------------------------------------------- */
+const char *greek_substitute_word(const char *word, int len, int *out_len)
+{
+    /* Curated list of names that are safe to substitute in prose.
+     * Excludes "P", "p", "i", "pm", "leq" etc. that would mangle text. */
+    static const char *greek_names[] = {
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta",
+        "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "rho",
+        "sigma", "tau", "phi", "chi", "psi", "omega",
+        "Gamma", "Delta", "Theta", "Lambda", "Pi", "Sigma", "Phi",
+        "Psi", "Omega",
+        NULL
+    };
+
+    if (!word || len <= 0) return NULL;
+
+    for (int i = 0; greek_names[i]; i++) {
+        const char *cand = greek_names[i];
+        int clen = (int)strlen(cand);
+        if (clen != len) continue;
+        if (memcmp(word, cand, len) != 0) continue;
+
+        /* Match - return the OS bytes for this name */
+        const char *bytes = sym(cand);
+        /* Sanity: the symbol table should always return a real 2-byte
+         * sequence for the names listed above.  If it's not registered
+         * for some reason (e.g. "pi" is used here -- intentionally
+         * omitted from this list because "pi" appears in English text
+         * like "pi-system"), fall through. */
+        if (bytes == cand) return NULL;       /* fallback path */
+        if (out_len) *out_len = (int)strlen(bytes);
+        return bytes;
+    }
+    return NULL;
+}
+
 
 /* #########################################################################
  * §3: FONT METRICS
@@ -255,27 +303,50 @@ static int tier_glyph_w(FontTier t)
 }
 
 /* -----------------------------------------------------------------------
- * measure_text_width — pixel width of a string at a given tier
+ * measure_text_width - pixel width of a string at a given tier
  *
  * Multi-byte detection:
- *   Bytes 0xE5–0xE7 are lead bytes.  Each 2-byte pair = one glyph.
+ *   Bytes 0xE5-0xE7 are lead bytes.  Each 2-byte pair = one glyph.
  *   Everything else = one ASCII glyph per byte.
+ *
+ * v5 BUG FIX:
+ *   Previously this routine treated every glyph (ASCII or OS multi-byte)
+ *   as having the same width, so a leaf containing a single Greek symbol
+ *   like Delta was allocated only ASCII_W = 9 px, while the actual
+ *   rendered glyph is ~12 px wide.  The next character then drew on top
+ *   of the right edge of Delta, making it look "missing" on screen.
+ *
+ *   We now apply a per-tier multi-byte width that reflects the wider
+ *   metrics of the OS Greek/operator glyphs.  Numbers come from the
+ *   pre-measured widths recorded in the symbol table (§2 above).
  * ----------------------------------------------------------------------- */
+static int tier_multibyte_w(FontTier t)
+{
+    switch (t) {
+        case FONT_LARGE:  return 16;   /* big tier ~ 1.3x normal */
+        case FONT_NORMAL: return 12;   /* matches sym table width */
+        case FONT_SMALL:  return 10;
+    }
+    return 12;
+}
+
 static int measure_text_width(const char *s, FontTier tier)
 {
-    int glyphs = 0;
+    int width = 0;
     const unsigned char *p = (const unsigned char *)s;
+    int ascii_w     = tier_glyph_w(tier);
+    int multibyte_w = tier_multibyte_w(tier);
 
     while (*p) {
         if (*p >= 0xE5 && *p <= 0xE7 && *(p + 1)) {
-            glyphs++;
+            width += multibyte_w;
             p += 2;       /* consume the 2-byte pair */
         } else {
-            glyphs++;
+            width += ascii_w;
             p++;
         }
     }
-    return glyphs * tier_glyph_w(tier);
+    return width;
 }
 
 

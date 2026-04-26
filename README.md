@@ -4,6 +4,34 @@ A six-topic educational add-in covering quantum mechanics, spectroscopy,
 and many-electron atoms. Built on the modern **fxSDK + gint** stack with
 a custom 2D math rendering engine.
 
+## v5 updates
+
+* **Dynamic equation wrapping with continuation markers:** very long
+  equations (the molecular and Helium Hamiltonians, in particular) are
+  now broken at logical operators (=, +, -) into multiple visible lines.
+  Each non-final line ends with `...` and each non-first line begins with
+  `...`, so the user can visually trace the break.  When splitting is
+  impossible (a single fraction wider than the screen, or a single chunk
+  still too wide after split) we fall back to FONT_SMALL demotion.
+* **Greek text -> symbol substitution:** prose strings throughout the
+  app now substitute whole-word Greek transliterations (psi, phi, Phi,
+  Delta, alpha, beta, mu, omega, ...) with their actual OS-font glyphs
+  at draw time.  Mixed identifiers like `psi_n`, `mu*r^2`, or "pi-system"
+  are intentionally left untouched.
+* **Delta rendering bug fixed:** `measure_text_width()` now reports the
+  correct (wider) pixel width for OS multi-byte glyphs at each font
+  tier, so capital Delta and other wide symbols no longer get clipped
+  by adjacent characters in equation rendering.
+* **Menu navigation v5:**
+  - UP/DOWN: single-step on every press.  Holding for longer than half
+    a second jumps to the top (UP) or bottom (DOWN) and locks until the
+    key is released.
+  - LEFT/RIGHT: strict single-step, no auto-repeat -- moving exactly one
+    item per press regardless of how long the key is held.  RIGHT at
+    the very last item is a no-op.
+  Same rules apply to the per-topic submenu, content scrollers, and the
+  global Navigation screen for UX consistency.
+
 ## v4 updates
 
 * **Statistical Mechanics tab (Lecture 13):** new 7th topic covering

@@ -38,6 +38,9 @@ typedef struct {
 
 /* -----------------------------------------------------------------------
  * Menu - full state for a scrolling menu screen
+ *
+ * v5: added held_key + held_count to support the long-press jump-to-end
+ * behaviour for UP and DOWN.
  * ----------------------------------------------------------------------- */
 typedef struct {
     const char *title;
@@ -45,6 +48,13 @@ typedef struct {
     int  num_items;
     int  sel;
     int  scroll_top;
+
+    /* Long-press tracking (v5) */
+    int  held_key;       /* last key currently being held (0 = none) */
+    int  held_count;     /* number of KEYEV_HOLD events since DOWN   */
+    int  jumped;         /* set to 1 once the long-press jump fires
+                            so it does not fire repeatedly while the
+                            user keeps holding the key                */
 } Menu;
 
 /* -----------------------------------------------------------------------

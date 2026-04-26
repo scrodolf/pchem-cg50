@@ -79,8 +79,23 @@ static int draw_wrapped(const char *text, int x, int start_y, int max_w,
         int is_newline = (*p == '\n');
 
         if (is_space || is_newline || is_end) {
+            /* v5: check whether the pending word matches a Greek
+             * transliteration in the symbol table.  If so, the rendered
+             * width and bytes change. */
+            const char *render_bytes = word_start;
+            int         render_len   = word_len;
+            int         render_w     = word_w;
+            int         sub_len      = 0;
+            const char *sub = greek_substitute_word(word_start, word_len,
+                                                    &sub_len);
+            if (sub) {
+                render_bytes = sub;
+                render_len   = sub_len;
+                render_w     = MULTIBYTE_W;   /* one glyph */
+            }
+
             /* Try to fit the pending word onto the current line */
-            int needed = line_w + (line_len > 0 ? BODY_CHAR_W : 0) + word_w;
+            int needed = line_w + (line_len > 0 ? BODY_CHAR_W : 0) + render_w;
             if (needed > max_w && line_len > 0) {
                 /* Flush current line, start new line */
                 line_buf[line_len] = '\0';
@@ -94,11 +109,11 @@ static int draw_wrapped(const char *text, int x, int start_y, int max_w,
                 line_buf[line_len++] = ' ';
                 line_w += BODY_CHAR_W;
             }
-            if (word_len > 0 &&
-                line_len + word_len < (int)sizeof(line_buf)) {
-                memcpy(line_buf + line_len, word_start, word_len);
-                line_len += word_len;
-                line_w += word_w;
+            if (render_len > 0 &&
+                line_len + render_len < (int)sizeof(line_buf)) {
+                memcpy(line_buf + line_len, render_bytes, render_len);
+                line_len += render_len;
+                line_w += render_w;
             }
 
             if (is_newline) {
@@ -1901,6 +1916,10 @@ void submenu_draw(const SubMenuScreen *sm)
 
 int submenu_handle_key(SubMenuScreen *sm, key_event_t ev)
 {
+    /* Submenu has only 3 items so long-press jump is unnecessary, but we
+     * honour the v5 LEFT/RIGHT single-step rule for UX symmetry with the
+     * main menu.  LEFT/RIGHT only react to KEYEV_DOWN; auto-repeat events
+     * are ignored.  RIGHT at the last item is a no-op. */
     if (ev.type != KEYEV_DOWN && ev.type != KEYEV_HOLD)
         return 0;
 
@@ -1910,6 +1929,12 @@ int submenu_handle_key(SubMenuScreen *sm, key_event_t ev)
         return 0;
     case KEY_DOWN:
         if (sm->sel < NUM_SUBTOPICS - 1) sm->sel++;
+        return 0;
+    case KEY_LEFT:
+        if (ev.type == KEYEV_DOWN && sm->sel > 0) sm->sel--;
+        return 0;
+    case KEY_RIGHT:
+        if (ev.type == KEYEV_DOWN && sm->sel < NUM_SUBTOPICS - 1) sm->sel++;
         return 0;
     case KEY_EXE:
         return 1;
@@ -1937,10 +1962,13 @@ int submenu_handle_key(SubMenuScreen *sm, key_event_t ev)
 
 void topic_init(TopicScreen *ts, TopicID topic, SubtopicID subtopic)
 {
-    ts->topic    = topic;
-    ts->subtopic = subtopic;
-    ts->scroll_y = 0;
+    ts->topic     = topic;
+    ts->subtopic  = subtopic;
+    ts->scroll_y  = 0;
     ts->content_h = 0;
+    ts->held_key  = 0;
+    ts->held_count = 0;
+    ts->jumped    = 0;
 }
 
 /* Section heading block */
@@ -1974,6 +2002,164 @@ static int measure_descriptions(const TopicContent *tc, int max_w)
     return cy;
 }
 
+/* ==========================================================================
+ * §6.5 - DYNAMIC EQUATION WRAPPING (v5)
+ * ==========================================================================
+ *
+ * For long equations whose laid-out width exceeds the available content
+ * area (e.g. the molecular Hamiltonian), break the top-level row at
+ * mathematical operators (=, +, -) and render across multiple lines.
+ *
+ * Each line beyond the first starts with a "..." continuation marker,
+ * and each line that has a successor ends with a "..." marker, so the
+ * user can visually trace the break.
+ *
+ * If the input is not a MATH_ROW (e.g. a single fraction or sandwich)
+ * or even after splitting one chunk is still wider than max_w, we fall
+ * back to the v4 strategy: render_force_tier(FONT_SMALL) + re-layout.
+ * ========================================================================== */
+
+/* True if the node is a TEXT node containing one of the operator chars
+ * we are willing to break BEFORE. */
+static int is_break_operator(const MathNode *n)
+{
+    if (!n) return 0;
+    if (n->type != MATH_TEXT) return 0;
+    const char *s = n->d.leaf.text;
+    /* Strip leading whitespace */
+    while (*s == ' ') s++;
+    /* Empty or longer than 2 chars (e.g. " = ") -- we just look for the
+     * presence of the operator character. */
+    return (*s == '=' || *s == '+' || *s == '-');
+}
+
+/* Build a fresh MATH_ROW from `count` children pulled out of the source
+ * row [src_children + start ... src_children + end-1], optionally
+ * prefixed with a "..." node and/or suffixed with one. */
+static MathNode *build_row_chunk(MathNode **src, int start, int end,
+                                 int prefix_ellipsis, int suffix_ellipsis)
+{
+    MathNode *kids[MAX_ROW_CHILDREN];
+    int       n = 0;
+
+    if (prefix_ellipsis && n < MAX_ROW_CHILDREN) {
+        kids[n++] = math_text("... ");
+    }
+    for (int i = start; i < end && n < MAX_ROW_CHILDREN; i++) {
+        kids[n++] = src[i];
+    }
+    if (suffix_ellipsis && n < MAX_ROW_CHILDREN) {
+        kids[n++] = math_text(" ...");
+    }
+    return math_row(kids, n);
+}
+
+/* Render the equation tree, wrapping rows that exceed max_w.
+ * Returns total height consumed (sum of per-line heights + small gap).
+ *
+ * `draw == 0` => measurement only (used by the height-pass before scroll).
+ *
+ * NOTE: this function may allocate from the math node pool (for the
+ * chunk rows it constructs).  Callers should reset the pool before
+ * the parent draw pass that calls this.
+ */
+static int render_equation_wrapped(MathNode *root, int x, int start_y,
+                                   int max_w, int draw)
+{
+    if (!root) return 0;
+
+    int cy = start_y;
+
+    /* Lay out once to get widths for every node. */
+    render_layout(root);
+
+    /* Fast path: equation already fits */
+    if (root->layout.w <= max_w) {
+        if (draw) render_draw(root, x, cy);
+        return root->layout.h;
+    }
+
+    /* If root isn't a row we cannot meaningfully split.  Fall back to
+     * font-tier demotion (the v4 strategy). */
+    if (root->type != MATH_ROW) {
+        render_force_tier(root, FONT_SMALL);
+        render_layout(root);
+        if (draw) {
+            int ex = x;
+            render_draw(root, ex, cy);
+        }
+        return root->layout.h;
+    }
+
+    /* Walk the row's children, accumulating width.  Break BEFORE an
+     * operator child whenever the running width would overflow. */
+    MathNode **kids = root->d.row.children;
+    int        nkids = root->d.row.count;
+    int        gap   = 2;     /* ROW_GAP - matches render.c constant */
+    int        chunk_start = 0;
+    int        running_w   = 0;
+    int        last_break  = 0;          /* last index where a break is OK */
+    int        first_chunk = 1;
+
+    for (int i = 0; i < nkids; i++) {
+        MathNode *child = kids[i];
+        if (!child) continue;
+        int cw = child->layout.w + (i > chunk_start ? gap : 0);
+
+        /* If this child is an operator AND we already have content in
+         * the current chunk, mark this as a candidate break point. */
+        if (is_break_operator(child) && i > chunk_start) {
+            last_break = i;
+        }
+
+        /* Reserve room for the trailing "..." (~ 28 px in body font). */
+        int reserve = 28;
+
+        if (running_w + cw > max_w - reserve && last_break > chunk_start) {
+            /* Flush chunk_start..last_break-1 as one rendered row, with
+             * suffix "..." (and prefix "..." if not the first chunk). */
+            MathNode *chunk = build_row_chunk(kids, chunk_start, last_break,
+                                              !first_chunk, 1);
+            if (chunk) {
+                render_layout(chunk);
+                if (chunk->layout.w > max_w) {
+                    /* Single chunk still too wide -- demote */
+                    render_force_tier(chunk, FONT_SMALL);
+                    render_layout(chunk);
+                }
+                if (draw) render_draw(chunk, x, cy);
+                cy += chunk->layout.h + 2;
+            }
+            first_chunk = 0;
+            chunk_start = last_break;
+            running_w   = 0;
+            last_break  = chunk_start;
+            /* Re-evaluate this child against the new chunk */
+            i = chunk_start - 1;
+            continue;
+        }
+
+        running_w += cw;
+    }
+
+    /* Flush the final chunk (no trailing "...") */
+    if (chunk_start < nkids) {
+        MathNode *chunk = build_row_chunk(kids, chunk_start, nkids,
+                                          !first_chunk, 0);
+        if (chunk) {
+            render_layout(chunk);
+            if (chunk->layout.w > max_w) {
+                render_force_tier(chunk, FONT_SMALL);
+                render_layout(chunk);
+            }
+            if (draw) render_draw(chunk, x, cy);
+            cy += chunk->layout.h + 2;
+        }
+    }
+
+    return cy - start_y;
+}
+
 /* ---------- Equations view ---------- */
 static int draw_equations(const TopicContent *tc, int x, int y, int max_w,
                           int draw)
@@ -1990,37 +2176,23 @@ static int draw_equations(const TopicContent *tc, int x, int y, int max_w,
         if (draw) dtext(x, cy, COL_ACCENT, eq->label);
         cy += BODY_LINE_H + 2;
 
-        /* Render the math expression.
+        /* Render the math expression with dynamic wrapping (v5).
          *
-         * v4 fix: when the laid-out tree is wider than the available
-         * content width (typically because of long Hamiltonians like the
-         * Helium or general molecular Hamiltonian), force every node to
-         * FONT_SMALL and re-layout.  This trades visual size for full
-         * visibility, so users no longer see the right edge of the
-         * equation cut off by the screen boundary.
+         * If the equation is wider than the available content width
+         * (typically the molecular Hamiltonian), render_equation_wrapped()
+         * splits it at the most recent operator (=, +, -) and renders
+         * across multiple lines with "..." continuation markers.  When
+         * splitting is impossible (non-row tree, or even one chunk
+         * still too wide) it falls back to FONT_SMALL demotion.
          */
         if (eq->builder) {
             MathNode *tree = eq->builder();
             if (tree) {
                 int eq_indent = 8;
                 int avail_w   = max_w - eq_indent;
-
-                render_layout(tree);
-
-                if (tree->layout.w > avail_w) {
-                    /* Demote the entire subtree and recompute */
-                    render_force_tier(tree, FONT_SMALL);
-                    render_layout(tree);
-                }
-
-                if (draw) {
-                    int ex = x + eq_indent;
-                    /* If still wider than viewport (extreme case),
-                     * left-align so as much as possible is visible. */
-                    if (tree->layout.w > avail_w) ex = x;
-                    render_draw(tree, ex, cy);
-                }
-                cy += tree->layout.h + 4;
+                int h = render_equation_wrapped(tree, x + eq_indent, cy,
+                                                avail_w, draw);
+                cy += h + 4;
             }
         }
 
@@ -2147,8 +2319,27 @@ void topic_draw(TopicScreen *ts)
 
 int topic_handle_key(TopicScreen *ts, key_event_t ev)
 {
+    /* v5: long-press UP/DOWN jumps to top/bottom of content;
+     *     LEFT/RIGHT scroll one line on KEYEV_DOWN only (no auto-repeat). */
     if (ev.type != KEYEV_DOWN && ev.type != KEYEV_HOLD)
         return 0;
+
+    /* Long-press tracking */
+    if (ev.type == KEYEV_DOWN) {
+        ts->held_key   = ev.key;
+        ts->held_count = 0;
+        ts->jumped     = 0;
+    } else if (ev.type == KEYEV_HOLD) {
+        if (ev.key == ts->held_key) {
+            ts->held_count++;
+        } else {
+            ts->held_key   = ev.key;
+            ts->held_count = 0;
+            ts->jumped     = 0;
+        }
+    }
+    int is_long_press = (ev.type == KEYEV_HOLD &&
+                         ts->held_count >= 2 && !ts->jumped);
 
     int page  = SCREEN_H - HEADER_H - FOOTER_H;
     int limit = ts->content_h - page;
@@ -2156,12 +2347,36 @@ int topic_handle_key(TopicScreen *ts, key_event_t ev)
 
     switch (ev.key) {
     case KEY_UP:
-        ts->scroll_y -= 18;
-        if (ts->scroll_y < 0) ts->scroll_y = 0;
+        if (is_long_press) {
+            ts->scroll_y = 0;
+            ts->jumped   = 1;
+        } else if (!ts->jumped) {
+            ts->scroll_y -= 18;
+            if (ts->scroll_y < 0) ts->scroll_y = 0;
+        }
         return 0;
     case KEY_DOWN:
-        ts->scroll_y += 18;
-        if (ts->scroll_y > limit) ts->scroll_y = limit;
+        if (is_long_press) {
+            ts->scroll_y = limit;
+            ts->jumped   = 1;
+        } else if (!ts->jumped) {
+            ts->scroll_y += 18;
+            if (ts->scroll_y > limit) ts->scroll_y = limit;
+        }
+        return 0;
+    case KEY_LEFT:
+        if (ev.type == KEYEV_DOWN) {
+            ts->scroll_y -= 18;
+            if (ts->scroll_y < 0) ts->scroll_y = 0;
+        }
+        return 0;
+    case KEY_RIGHT:
+        if (ev.type == KEYEV_DOWN) {
+            if (ts->scroll_y < limit) {   /* no-op at bottom */
+                ts->scroll_y += 18;
+                if (ts->scroll_y > limit) ts->scroll_y = limit;
+            }
+        }
         return 0;
     case KEY_F1:
         ts->scroll_y -= page;

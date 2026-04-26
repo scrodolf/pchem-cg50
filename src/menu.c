@@ -41,6 +41,9 @@ void menu_init(Menu *m, const char *title, const MenuItem *items, int count)
     m->num_items  = count;
     m->sel        = 0;
     m->scroll_top = 0;
+    m->held_key   = 0;
+    m->held_count = 0;
+    m->jumped     = 0;
 }
 
 /* -----------------------------------------------------------------------
@@ -157,37 +160,122 @@ void menu_draw(const Menu *m)
  *
  * Returns a MenuAction telling the caller what high-level thing happened.
  * ----------------------------------------------------------------------- */
+/* -----------------------------------------------------------------------
+ * v5 navigation rules:
+ *   UP / DOWN     : single-step on KEYEV_DOWN, single-step on each
+ *                   KEYEV_HOLD (auto-repeat) -- familiar behaviour.
+ *                   IF the user keeps holding the same key for >0.5 s
+ *                   (detected by counting >= 2 KEYEV_HOLD events post
+ *                   DOWN, i.e. ~480 ms+), JUMP to the top (UP) or the
+ *                   bottom (DOWN) and freeze further repeats until the
+ *                   key is released and pressed again.
+ *
+ *   LEFT  / RIGHT : single-step BUT only on KEYEV_DOWN.  Hold / repeat
+ *                   events are ignored, so even a continuous hold moves
+ *                   the selection by exactly one item.  At the bottom
+ *                   of the menu RIGHT becomes a no-op.
+ *
+ *   EXE / EXIT / MENU : unchanged.
+ *
+ * The Menu struct tracks (held_key, held_count, jumped) to drive the
+ * threshold detection.  Any DOWN-edge resets these fields so a fresh
+ * press always starts the timer cleanly.
+ * ----------------------------------------------------------------------- */
+
+#define LONG_PRESS_HOLD_THRESHOLD  2   /* >= this many HOLDs -> long press */
+
+static void menu_step_up(Menu *m)
+{
+    if (m->sel > 0) {
+        m->sel--;
+        if (m->sel < m->scroll_top) m->scroll_top = m->sel;
+    }
+}
+
+static void menu_step_down(Menu *m)
+{
+    if (m->sel < m->num_items - 1) {
+        m->sel++;
+        if (m->sel >= m->scroll_top + MENU_VISIBLE)
+            m->scroll_top = m->sel - MENU_VISIBLE + 1;
+    }
+}
+
+static void menu_jump_top(Menu *m)
+{
+    m->sel = 0;
+    m->scroll_top = 0;
+}
+
+static void menu_jump_bottom(Menu *m)
+{
+    m->sel = m->num_items - 1;
+    m->scroll_top = m->num_items - MENU_VISIBLE;
+    if (m->scroll_top < 0) m->scroll_top = 0;
+}
+
 MenuAction menu_handle_key(Menu *m, key_event_t ev)
 {
-    /* Only handle key-down events (ignore key-up) */
+    /* Only act on press / hold events */
     if (ev.type != KEYEV_DOWN && ev.type != KEYEV_HOLD)
         return MENU_ACTION_NONE;
 
+    /* --- Long-press tracking --- */
+    if (ev.type == KEYEV_DOWN) {
+        m->held_key   = ev.key;
+        m->held_count = 0;
+        m->jumped     = 0;
+    } else if (ev.type == KEYEV_HOLD) {
+        if (ev.key == m->held_key) {
+            m->held_count++;
+        } else {
+            /* Different key without seeing DOWN first -> treat as fresh */
+            m->held_key   = ev.key;
+            m->held_count = 0;
+            m->jumped     = 0;
+        }
+    }
+
+    int is_long_press = (ev.type == KEYEV_HOLD &&
+                         m->held_count >= LONG_PRESS_HOLD_THRESHOLD &&
+                         !m->jumped);
+
     switch (ev.key) {
 
-    /* ---- Navigation: UP ---- */
+    /* ---- UP: single-step + long-press jump-to-top ---- */
     case KEY_UP:
-        if (m->sel > 0) {
-            m->sel--;
-            /* If selection scrolled above the visible window, adjust */
-            if (m->sel < m->scroll_top) {
-                m->scroll_top = m->sel;
-            }
+        if (is_long_press) {
+            menu_jump_top(m);
+            m->jumped = 1;        /* one-shot per hold */
+        } else if (!m->jumped) {
+            menu_step_up(m);
         }
         return MENU_ACTION_NONE;
 
-    /* ---- Navigation: DOWN ---- */
+    /* ---- DOWN: single-step + long-press jump-to-bottom ---- */
     case KEY_DOWN:
-        if (m->sel < m->num_items - 1) {
-            m->sel++;
-            /* If selection scrolled below the visible window, adjust */
-            if (m->sel >= m->scroll_top + MENU_VISIBLE) {
-                m->scroll_top = m->sel - MENU_VISIBLE + 1;
-            }
+        if (is_long_press) {
+            menu_jump_bottom(m);
+            m->jumped = 1;
+        } else if (!m->jumped) {
+            menu_step_down(m);
         }
         return MENU_ACTION_NONE;
 
-    /* ---- Select: EXE (the large key on the Casio keypad) ---- */
+    /* ---- LEFT: strict single-step UP, ignores HOLD events ---- */
+    case KEY_LEFT:
+        if (ev.type == KEYEV_DOWN) menu_step_up(m);
+        return MENU_ACTION_NONE;
+
+    /* ---- RIGHT: strict single-step DOWN, ignores HOLD; bottom = no-op ---- */
+    case KEY_RIGHT:
+        if (ev.type == KEYEV_DOWN) {
+            /* No-op when already at the last item (per spec). */
+            if (m->sel < m->num_items - 1) menu_step_down(m);
+        }
+        return MENU_ACTION_NONE;
+
+    /* ---- Select: EXE ---- */
     case KEY_EXE:
         return MENU_ACTION_SELECT;
 
