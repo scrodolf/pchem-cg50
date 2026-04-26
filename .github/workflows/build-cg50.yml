@@ -10,7 +10,7 @@
 # HARDENING APPLIED:
 #   - Retry wrapper around every GiteaPC install (forge can be slow)
 #   - Connectivity pre-check before starting the toolchain build
-#   - Cache key bumped to v2 to invalidate the broken v1 cachi
+#   - Cache key bumped to v2 to invalidate the broken v4 cachi
 #
 # TIMING:
 #   First run: ~45 minutes (compiles sh-elf-gcc from source)
