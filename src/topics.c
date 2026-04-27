@@ -42,7 +42,7 @@
 #define PARA_GAP           6
 #define HEADING_H_LOCAL   18
 #define BODY_CHAR_W        9
-#define MULTIBYTE_W       10
+#define MULTIBYTE_W        9    /* v6: ASCII surrogate => same as BODY_CHAR_W */
 
 /* Advance p by one glyph (1 or 2 bytes).  Returns new pointer. */
 static const char *advance_glyph(const char *p)
@@ -79,19 +79,23 @@ static int draw_wrapped(const char *text, int x, int start_y, int max_w,
         int is_newline = (*p == '\n');
 
         if (is_space || is_newline || is_end) {
-            /* v5: check whether the pending word matches a Greek
-             * transliteration in the symbol table.  If so, the rendered
-             * width and bytes change. */
+            /* v6: rewrite Greek transliterations with ASCII surrogates.
+             * The rewrite handles whole-word matches (psi -> y) AND
+             * subscripted-Greek tokens (phi_1s -> f_1s).  rewrite_buf
+             * holds the result; on no match we draw the original word.
+             */
+            char rewrite_buf[64];
+            int  rewrite_len = greek_rewrite_word(
+                word_start, word_len,
+                rewrite_buf, (int)sizeof(rewrite_buf));
+
             const char *render_bytes = word_start;
             int         render_len   = word_len;
             int         render_w     = word_w;
-            int         sub_len      = 0;
-            const char *sub = greek_substitute_word(word_start, word_len,
-                                                    &sub_len);
-            if (sub) {
-                render_bytes = sub;
-                render_len   = sub_len;
-                render_w     = MULTIBYTE_W;   /* one glyph */
+            if (rewrite_len > 0) {
+                render_bytes = rewrite_buf;
+                render_len   = rewrite_len;
+                render_w     = rewrite_len * BODY_CHAR_W;
             }
 
             /* Try to fit the pending word onto the current line */

@@ -4,6 +4,42 @@ A six-topic educational add-in covering quantum mechanics, spectroscopy,
 and many-electron atoms. Built on the modern **fxSDK + gint** stack with
 a custom 2D math rendering engine.
 
+## v6 updates
+
+* **Greek glyph rendering -- root cause fix:** the fx-CG50 OS multi-byte
+  page (\xE5xx) is **not** rendered by gint's default font, so the
+  Greek byte sequences we previously emitted produced invisible glyphs
+  on real hardware -- creating both the "missing Greek symbol" and the
+  "unexpected gaps" complaints (the layout reserved 12 px for each
+  glyph, which then drew zero visible pixels).  The pragmatic fix is
+  to drop the OS multi-byte page entirely and use ASCII surrogates
+  that gint's font definitely renders:
+
+      psi  ->  y     mu    ->  u     beta    ->  b
+      phi  ->  f     pi    ->  p     epsilon ->  e
+      Delta->  D     lambda->  L     chi     ->  c
+
+  (TeX-style mnemonics where possible.)  This trades the literal Greek
+  glyph for guaranteed-visible output; equations now read
+  `e^(-b*e_i)/q` instead of a blank-filled `e^(-?_i)/q`.  Once a true
+  Greek bitmap font is integrated this can be reverted by simply
+  swapping the symbol-table entries back to their OS bytes.
+
+* **Subscripted Greek tokens:** the prose rewriter now matches Greek
+  prefixes followed by `_` (subscript marker), so identifiers like
+  `phi_1s`, `psi_n`, `epsilon_i`, `Delta_E` are rewritten to
+  `f_1s`, `y_n`, `e_i`, `D_E` respectively.  Whole-word matches are
+  preserved.  Non-Greek words that merely begin with a Greek letter
+  (e.g. "chiasm", "phishing") are not rewritten -- the matcher
+  requires a `_` boundary or end-of-word.
+
+* **Width-allocation bug fixed:** with the OS multi-byte page gone,
+  every glyph is now exactly one ASCII char wide.  The
+  `tier_multibyte_w()` helper is no longer needed and the
+  word-wrap layout no longer over-reserves space.  The unwanted gaps
+  visible in IMG_8305 / IMG_8306 / IMG_8311 / IMG_8312 are eliminated
+  because measured width and rendered width finally match.
+
 ## v5 updates
 
 * **Dynamic equation wrapping with continuation markers:** very long

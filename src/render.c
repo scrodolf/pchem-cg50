@@ -104,8 +104,8 @@ int render_pool_used(void)
  * the byte pair here and rebuild.
  *
  * USAGE:
- *   math_symbol("psi")  →  MathNode with d.leaf.text = "\xE5\xB8"
- *   sym("Delta")        →  "\xE5\x84"  (raw byte string)
+ *   math_symbol("psi")  →  MathNode with d.leaf.text = "y"  (v6 ASCII surrogate)
+ *   sym("Delta")        →  "D"  (v6: ASCII surrogate; gint default font
  *   sym_width("pi")     →  10           (pixel width)
  * ######################################################################### */
 
@@ -135,54 +135,73 @@ void sym_table_init(void)
      *   σ cross-section, μ reduced mass, ν frequency,
      *   ε energy, γ decay rate, δ variation, π pi
      * ============================================================ */
-    sym_add("alpha",   "\xE5\xA0", 10);  /*  α  */
-    sym_add("beta",    "\xE5\xA1", 10);  /*  β  */
-    sym_add("gamma",   "\xE5\xA2", 10);  /*  γ  */
-    sym_add("delta",   "\xE5\xA3", 10);  /*  δ  */
-    sym_add("epsilon", "\xE5\xA4", 10);  /*  ε  */
-    sym_add("zeta",    "\xE5\xA5", 10);  /*  ζ  */
-    sym_add("eta",     "\xE5\xA6", 10);  /*  η  */
-    sym_add("theta",   "\xE5\xA8", 10);  /*  θ  */
-    sym_add("iota",    "\xE5\xA9", 10);  /*  ι  */
-    sym_add("kappa",   "\xE5\xAA", 10);  /*  κ  */
-    sym_add("lambda",  "\xE5\xAB", 10);  /*  λ  */
-    sym_add("mu",      "\xE5\xAC", 10);  /*  μ  */
-    sym_add("nu",      "\xE5\xAD", 10);  /*  ν  */
-    sym_add("xi",      "\xE5\xAE", 10);  /*  ξ  */
-    sym_add("pi",      "\xE5\xB0", 10);  /*  π  */
-    sym_add("rho",     "\xE5\xB1", 10);  /*  ρ  */
-    sym_add("sigma",   "\xE5\xB3", 10);  /*  σ  */
-    sym_add("tau",     "\xE5\xB4", 10);  /*  τ  */
-    sym_add("phi",     "\xE5\xB6", 10);  /*  φ  */
-    sym_add("chi",     "\xE5\xB7", 10);  /*  χ  */
-    sym_add("psi",     "\xE5\xB8", 10);  /*  ψ  */
-    sym_add("omega",   "\xE5\xB9", 10);  /*  ω  */
+    /* ============================================================
+     * GREEK LOWERCASE  (22 entries)
+     *
+     * v6: switched from OS multi-byte sequences (\xE5xx page) to
+     * ASCII surrogates because gint's default fx-CG50 font only
+     * reliably renders ASCII glyphs.  The OS multi-byte page was
+     * producing blank space on real hardware (visible as gaps in
+     * equations like `e^(-bE_i)/q` and `mu = m1m2/(m1+m2)`).
+     *
+     * Convention (TeX-style mnemonics where possible):
+     *   alpha=a, beta=b, gamma=g, delta=d, epsilon=e, zeta=z,
+     *   eta=h, theta=O, iota=i, kappa=k, lambda=L, mu=u, nu=v,
+     *   xi=x, pi=p, rho=r, sigma=s, tau=t, phi=f, chi=c, psi=y,
+     *   omega=w
+     *
+     * The width column reflects the ASCII glyph width (9 px at the
+     * normal tier) so layout reserves the correct space and no
+     * visible gaps appear after rendering.
+     * ============================================================ */
+    sym_add("alpha",   "a", 9);   /*  α  */
+    sym_add("beta",    "b", 9);   /*  β  */
+    sym_add("gamma",   "g", 9);   /*  γ  */
+    sym_add("delta",   "d", 9);   /*  δ  */
+    sym_add("epsilon", "e", 9);   /*  ε  */
+    sym_add("zeta",    "z", 9);   /*  ζ  */
+    sym_add("eta",     "h", 9);   /*  η  */
+    sym_add("theta",   "O", 9);   /*  θ  */
+    sym_add("iota",    "i", 9);   /*  ι  */
+    sym_add("kappa",   "k", 9);   /*  κ  */
+    sym_add("lambda",  "L", 9);   /*  λ  */
+    sym_add("mu",      "u", 9);   /*  μ  */
+    sym_add("nu",      "v", 9);   /*  ν  */
+    sym_add("xi",      "x", 9);   /*  ξ  */
+    sym_add("pi",      "p", 9);   /*  π  -- ASCII fallback        */
+    sym_add("rho",     "r", 9);   /*  ρ  */
+    sym_add("sigma",   "s", 9);   /*  σ  */
+    sym_add("tau",     "t", 9);   /*  τ  */
+    sym_add("phi",     "f", 9);   /*  φ  */
+    sym_add("chi",     "c", 9);   /*  χ  */
+    sym_add("psi",     "y", 9);   /*  ψ  */
+    sym_add("omega",   "w", 9);   /*  ω  */
 
     /* ============================================================
-     * GREEK UPPERCASE  (9 entries)
+     * GREEK UPPERCASE  (9 entries)  --  also ASCII surrogates
      * ============================================================ */
-    sym_add("Gamma",   "\xE5\x83", 12);  /*  Γ  */
-    sym_add("Delta",   "\xE5\x84", 12);  /*  Δ  */
-    sym_add("Theta",   "\xE5\x88", 12);  /*  Θ  */
-    sym_add("Lambda",  "\xE5\x8B", 12);  /*  Λ  */
-    sym_add("Pi",      "\xE5\x90", 12);  /*  Π  */
-    sym_add("Sigma",   "\xE5\x93", 14);  /*  Σ  */
-    sym_add("Phi",     "\xE5\x96", 12);  /*  Φ  */
-    sym_add("Psi",     "\xE5\x98", 12);  /*  Ψ  */
-    sym_add("Omega",   "\xE5\x99", 12);  /*  Ω  */
+    sym_add("Gamma",   "G", 9);   /*  Γ  */
+    sym_add("Delta",   "D", 9);   /*  Δ  -- bitmap drawn separately */
+    sym_add("Theta",   "Q", 9);   /*  Θ  */
+    sym_add("Lambda",  "A", 9);   /*  Λ  */
+    sym_add("Pi",      "P", 9);   /*  Π  */
+    sym_add("Sigma",   "S", 9);   /*  Σ  -- bigop draws sigma sign  */
+    sym_add("Phi",     "F", 9);   /*  Φ  */
+    sym_add("Psi",     "Y", 9);   /*  Ψ  */
+    sym_add("Omega",   "W", 9);   /*  Ω  */
 
     /* ============================================================
-     * MATH OPERATORS  (9 entries)
+     * MATH OPERATORS  (9 entries)  --  ASCII surrogates
      * ============================================================ */
-    sym_add("pm",       "\xE5\xC0", 12);  /*  ±  */
-    sym_add("times",    "\xE5\xC1", 10);  /*  ×  */
-    sym_add("div",      "\xE5\xC2", 10);  /*  ÷  */
-    sym_add("leq",      "\xE5\xC4", 12);  /*  ≤  */
-    sym_add("geq",      "\xE5\xC5", 12);  /*  ≥  */
-    sym_add("neq",      "\xE5\xC6", 12);  /*  ≠  */
-    sym_add("inf",      "\xE5\xD0", 14);  /*  ∞  */
-    sym_add("rarr",     "\xE5\xD1", 14);  /*  →  */
-    sym_add("sqrt_sym", "\xE5\xCC", 10);  /*  √  */
+    sym_add("pm",       "+/-", 18);  /*  ±  */
+    sym_add("times",    "x",   9);   /*  ×  */
+    sym_add("div",      "/",   9);   /*  ÷  */
+    sym_add("leq",      "<=", 18);   /*  ≤  */
+    sym_add("geq",      ">=", 18);   /*  ≥  */
+    sym_add("neq",      "!=", 18);   /*  ≠  */
+    sym_add("inf",      "inf", 27);  /*  ∞  */
+    sym_add("rarr",     "->", 18);   /*  →  */
+    sym_add("sqrt_sym", "v", 9);     /*  √  -- math_sqrt() draws it */
 
     /* ============================================================
      * SPECIAL PHYSICS  (3 entries)
@@ -217,51 +236,66 @@ int sym_width(const char *name)
 }
 
 /* -----------------------------------------------------------------------
- * greek_substitute_word - prose-side glyph substitution
+ * greek_rewrite_word - prose-side Greek-token rewriter
  *
- * Looks up exactly the (word, len) span in the symbol table.  We only
- * substitute a curated subset of the symbol table (just the Greek
- * letters and a few math operators) so that ASCII identifiers like
- * "Phi" inside variable names ("Phi_2s") never get spuriously matched
- * because callers always pass whole-word spans split on whitespace.
+ * Matches either a whole-word Greek transliteration or a Greek prefix
+ * immediately followed by '_' (subscript marker).  On match, writes the
+ * ASCII-surrogate version of the token into out_buf and returns the
+ * number of bytes written.  On no match, returns 0 and the caller
+ * should leave the original word untouched.
  *
- * Returns the OS multi-byte string for the glyph on match, NULL on
- * miss.  *out_len is set to the byte length of the returned string
- * (always 2 for our OS sequences).
+ * The function intentionally does NOT match Greek prefixes followed by
+ * arbitrary letters (so "chiasm" stays as "chiasm", not "casm"), only
+ * '_' or end-of-word boundaries.  This keeps the rewrite predictable
+ * and avoids surprises in non-Greek English vocabulary.
  * ----------------------------------------------------------------------- */
-const char *greek_substitute_word(const char *word, int len, int *out_len)
+int greek_rewrite_word(const char *word, int len,
+                       char *out_buf, int out_cap)
 {
-    /* Curated list of names that are safe to substitute in prose.
-     * Excludes "P", "p", "i", "pm", "leq" etc. that would mangle text. */
+    /* Curated list -- order matters: longer prefixes must come first so
+     * "epsilon" is tested before any 1-2 letter shorter prefix could
+     * incorrectly steal the match. */
     static const char *greek_names[] = {
-        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta",
-        "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "rho",
-        "sigma", "tau", "phi", "chi", "psi", "omega",
-        "Gamma", "Delta", "Theta", "Lambda", "Pi", "Sigma", "Phi",
-        "Psi", "Omega",
+        "epsilon", "lambda", "Lambda", "Omega", "Sigma", "omega",
+        "alpha", "beta",  "gamma",  "delta",  "Delta",  "theta",
+        "Theta", "kappa", "sigma", "Gamma", "Phi", "Psi",
+        "iota",  "zeta",  "eta",
+        "rho", "tau", "phi", "chi", "psi", "Pi",
+        "mu",  "nu",  "xi", "pi",
         NULL
     };
 
-    if (!word || len <= 0) return NULL;
+    if (!word || len <= 0 || !out_buf || out_cap <= 0) return 0;
 
     for (int i = 0; greek_names[i]; i++) {
         const char *cand = greek_names[i];
         int clen = (int)strlen(cand);
-        if (clen != len) continue;
-        if (memcmp(word, cand, len) != 0) continue;
 
-        /* Match - return the OS bytes for this name */
-        const char *bytes = sym(cand);
-        /* Sanity: the symbol table should always return a real 2-byte
-         * sequence for the names listed above.  If it's not registered
-         * for some reason (e.g. "pi" is used here -- intentionally
-         * omitted from this list because "pi" appears in English text
-         * like "pi-system"), fall through. */
-        if (bytes == cand) return NULL;       /* fallback path */
-        if (out_len) *out_len = (int)strlen(bytes);
-        return bytes;
+        /* Prefix must fit and bytes must match */
+        if (clen > len) continue;
+        if (memcmp(word, cand, clen) != 0) continue;
+
+        /* Boundary check: end-of-word OR followed by '_' */
+        int is_whole_word = (clen == len);
+        int has_subscript = (clen < len && word[clen] == '_');
+        if (!is_whole_word && !has_subscript) continue;
+
+        /* Surrogate (always 1 char) from the symbol table */
+        const char *surr = sym(cand);
+        if (!surr || !surr[0]) continue;
+
+        /* Compose: surrogate + remainder of word */
+        int surr_len = (int)strlen(surr);
+        int rem_len  = len - clen;
+        int total    = surr_len + rem_len;
+        if (total > out_cap) continue;        /* won't fit, skip */
+
+        memcpy(out_buf, surr, surr_len);
+        if (rem_len > 0)
+            memcpy(out_buf + surr_len, word + clen, rem_len);
+        return total;
     }
-    return NULL;
+    return 0;       /* no match */
 }
 
 
@@ -305,42 +339,23 @@ static int tier_glyph_w(FontTier t)
 /* -----------------------------------------------------------------------
  * measure_text_width - pixel width of a string at a given tier
  *
- * Multi-byte detection:
- *   Bytes 0xE5-0xE7 are lead bytes.  Each 2-byte pair = one glyph.
- *   Everything else = one ASCII glyph per byte.
- *
- * v5 BUG FIX:
- *   Previously this routine treated every glyph (ASCII or OS multi-byte)
- *   as having the same width, so a leaf containing a single Greek symbol
- *   like Delta was allocated only ASCII_W = 9 px, while the actual
- *   rendered glyph is ~12 px wide.  The next character then drew on top
- *   of the right edge of Delta, making it look "missing" on screen.
- *
- *   We now apply a per-tier multi-byte width that reflects the wider
- *   metrics of the OS Greek/operator glyphs.  Numbers come from the
- *   pre-measured widths recorded in the symbol table (§2 above).
+ * v6: simplified after the Greek-to-ASCII migration.  All glyphs that
+ * leaf nodes can hold are now pure ASCII (32-126), so each byte == one
+ * glyph at tier_glyph_w() pixels.  We still defensively skip any stray
+ * 0xE5-0xE7 lead byte so legacy data (or future bitmap-rendered Greek)
+ * does not produce phantom widths.
  * ----------------------------------------------------------------------- */
-static int tier_multibyte_w(FontTier t)
-{
-    switch (t) {
-        case FONT_LARGE:  return 16;   /* big tier ~ 1.3x normal */
-        case FONT_NORMAL: return 12;   /* matches sym table width */
-        case FONT_SMALL:  return 10;
-    }
-    return 12;
-}
-
 static int measure_text_width(const char *s, FontTier tier)
 {
     int width = 0;
     const unsigned char *p = (const unsigned char *)s;
-    int ascii_w     = tier_glyph_w(tier);
-    int multibyte_w = tier_multibyte_w(tier);
+    int ascii_w = tier_glyph_w(tier);
 
     while (*p) {
         if (*p >= 0xE5 && *p <= 0xE7 && *(p + 1)) {
-            width += multibyte_w;
-            p += 2;       /* consume the 2-byte pair */
+            /* Defensive path: count one glyph and consume the pair */
+            width += ascii_w;
+            p += 2;
         } else {
             width += ascii_w;
             p++;

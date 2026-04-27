@@ -24,7 +24,7 @@
 #define NAV_LINE_H        14
 #define NAV_HEADING_H     20
 #define NAV_CHAR_W         9
-#define NAV_MULTIBYTE_W   10
+#define NAV_MULTIBYTE_W    9    /* v6: ASCII surrogate */
 #define NAV_PARA_GAP       4
 
 /* Advance pointer by one glyph (multi-byte aware) */
@@ -56,17 +56,20 @@ static int nav_draw_wrapped(const char *text, int x, int start_y,
         int is_newline = (*p == '\n');
 
         if (is_space || is_newline || is_end) {
-            /* v5: Greek-transliteration substitution */
+            /* v6: rewrite Greek transliterations (incl. subscripted
+             * tokens like phi_1s) with ASCII surrogates. */
+            char rewrite_buf[64];
+            int  rewrite_len = greek_rewrite_word(
+                word_start, word_len,
+                rewrite_buf, (int)sizeof(rewrite_buf));
+
             const char *render_bytes = word_start;
             int         render_len   = word_len;
             int         render_w     = word_w;
-            int         sub_len      = 0;
-            const char *sub = greek_substitute_word(word_start, word_len,
-                                                    &sub_len);
-            if (sub) {
-                render_bytes = sub;
-                render_len   = sub_len;
-                render_w     = NAV_MULTIBYTE_W;
+            if (rewrite_len > 0) {
+                render_bytes = rewrite_buf;
+                render_len   = rewrite_len;
+                render_w     = rewrite_len * NAV_CHAR_W;
             }
 
             int needed = line_w + (line_len > 0 ? NAV_CHAR_W : 0) + render_w;

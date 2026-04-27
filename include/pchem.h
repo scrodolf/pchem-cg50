@@ -128,56 +128,53 @@ typedef enum {
 /* -----------------------------------------------------------------------
  * GREEK & MATH GLYPH MACROS
  * -----------------------------------------------------------------------
- * String literals containing the fx-CG50 OS multi-byte sequences for
- * Greek letters and common math symbols.  These can be concatenated into
- * any C string literal so that prose paragraphs and labels render the
- * actual glyph instead of the ASCII name.
+ * v6: switched from OS multi-byte sequences (\xE5xx) to ASCII surrogates.
+ * gint's default fx-CG50 font only renders ASCII reliably; the OS Greek
+ * page produced blank space on real hardware (visible as gaps in
+ * equations and prose).  We use the same TeX-style mnemonic surrogates
+ * as the symbol table in render.c: phi=f, psi=y, mu=u, beta=b, etc.
  *
- * Bytes are identical to the entries registered by sym_table_init() in
- * render.c (see §2 of that file).  Defined here so they are visible to
- * topics.c and navigation.c at compile time without a function call.
- *
- * Usage:  "energy gap " G_DELTA "E for the " G_PSI " ground state"
- *         -> renders as: energy gap deltaE for the psi ground state
- *         (with the Greek glyphs in place of "delta" and "psi").
+ * These macros remain useful so prose strings stay self-documenting and
+ * can be migrated to true bitmap glyphs later without changing source.
+ * Usage:  "energy gap " G_DELTA "E"  ->  "energy gap DE"
  * ----------------------------------------------------------------------- */
 /* Lowercase Greek */
-#define G_ALPHA   "\xE5\xA0"
-#define G_BETA    "\xE5\xA1"
-#define G_GAMMA   "\xE5\xA2"
-#define G_DELTA   "\xE5\xA3"
-#define G_EPSILON "\xE5\xA4"
-#define G_THETA   "\xE5\xA8"
-#define G_LAMBDA  "\xE5\xAB"
-#define G_MU      "\xE5\xAC"
-#define G_NU      "\xE5\xAD"
-#define G_PI      "\xE5\xB0"
-#define G_RHO     "\xE5\xB1"
-#define G_SIGMA   "\xE5\xB3"
-#define G_TAU     "\xE5\xB4"
-#define G_PHI     "\xE5\xB6"
-#define G_CHI     "\xE5\xB7"
-#define G_PSI     "\xE5\xB8"
-#define G_OMEGA   "\xE5\xB9"
+#define G_ALPHA   "a"
+#define G_BETA    "b"
+#define G_GAMMA   "g"
+#define G_DELTA   "d"
+#define G_EPSILON "e"
+#define G_THETA   "O"
+#define G_LAMBDA  "L"
+#define G_MU      "u"
+#define G_NU      "v"
+#define G_PI      "p"
+#define G_RHO     "r"
+#define G_SIGMA   "s"
+#define G_TAU     "t"
+#define G_PHI     "f"
+#define G_CHI     "c"
+#define G_PSI     "y"
+#define G_OMEGA   "w"
 
 /* Uppercase Greek */
-#define G_GAMMA_U "\xE5\x83"
-#define G_DELTA_U "\xE5\x84"
-#define G_THETA_U "\xE5\x88"
-#define G_LAMBDA_U "\xE5\x8B"
-#define G_PI_U    "\xE5\x90"
-#define G_SIGMA_U "\xE5\x93"
-#define G_PHI_U   "\xE5\x96"
-#define G_PSI_U   "\xE5\x98"
-#define G_OMEGA_U "\xE5\x99"
+#define G_GAMMA_U "G"
+#define G_DELTA_U "D"
+#define G_THETA_U "Q"
+#define G_LAMBDA_U "A"
+#define G_PI_U    "P"
+#define G_SIGMA_U "S"
+#define G_PHI_U   "F"
+#define G_PSI_U   "Y"
+#define G_OMEGA_U "W"
 
 /* Math operators */
-#define G_PM      "\xE5\xC0"   /* plus-or-minus */
-#define G_TIMES   "\xE5\xC1"   /* multiplication sign */
-#define G_LEQ     "\xE5\xC4"
-#define G_GEQ     "\xE5\xC5"
-#define G_NEQ     "\xE5\xC6"
-#define G_INF     "\xE5\xD0"
-#define G_RARR    "\xE5\xD1"
+#define G_PM      "+/-"
+#define G_TIMES   "x"
+#define G_LEQ     "<="
+#define G_GEQ     ">="
+#define G_NEQ     "!="
+#define G_INF     "inf"
+#define G_RARR    "->"
 
 #endif /* PCHEM_H */

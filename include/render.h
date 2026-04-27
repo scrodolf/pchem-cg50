@@ -211,13 +211,25 @@ void render_draw(const MathNode *node, int x, int y);
  * (i.e. demote a NORMAL tree to SMALL when it overflows). */
 void render_force_tier(MathNode *node, FontTier tier);
 
-/* If `word` (a non-NUL-terminated buffer of `len` bytes) exactly matches a
- * known Greek transliteration ("psi", "Phi", "Delta", "alpha", ...), this
- * returns a pointer to the OS multi-byte string for that glyph and sets
- * *out_len to the byte length of the OS sequence (always 2 for our
- * symbols).  Returns NULL if no match - caller should render the original
- * word unchanged.  Matches are case-sensitive ("Pi" != "pi"). */
-const char *greek_substitute_word(const char *word, int len, int *out_len);
+/* If `word` (a non-NUL-terminated buffer of `len` bytes) contains a
+ * Greek transliteration (whole-word OR a Greek prefix followed by '_'
+ * for a subscript), rewrites the token into out_buf using the ASCII
+ * surrogate from the symbol table.
+ *
+ * Examples:
+ *   "psi"      -> "y"     (whole-word match)
+ *   "psi_n"    -> "y_n"   (Greek prefix + subscript)
+ *   "phi_1s"   -> "f_1s"
+ *   "Delta"    -> "D"
+ *   "DeltaE"   -> "DE"    (Greek prefix immediately followed by capital)
+ *   "psi*r"    -> NULL    (no '_' or end-of-word boundary; passes through)
+ *
+ * Returns the number of bytes written to out_buf on a match, 0 if no
+ * Greek prefix was found (caller should render the word unchanged).
+ * Never writes more than out_cap bytes (always NUL-safe; out is NOT
+ * NUL-terminated -- caller knows the length). */
+int greek_rewrite_word(const char *word, int len,
+                       char *out_buf, int out_cap);
 
 /* Debug utility: return human-readable name for a node type */
 const char *render_type_name(MathNodeType type);
