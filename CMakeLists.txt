@@ -23,6 +23,8 @@ set(SOURCES
     src/render.c        # 2D math rendering: AST, layout, draw
     src/topics.c        # Topic content, submenus, content views
     src/navigation.c    # Global keyword/symbol navigator
+    src/formula.c       # Formula Guide tab: all equations by topic
+    src/greeksymbols.c  # Greek Symbols dictionary tab
     src/input.c         # Keyboard event handling
 )
 

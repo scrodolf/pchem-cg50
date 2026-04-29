@@ -884,84 +884,379 @@ static MathNode *eq_boltzmann_ratio(void)
     return row_of(parts, 3);
 }
 
+/* =========================================================================
+ * NEW (Step 2) - Additional physics/chemistry equation builders
+ * =========================================================================
+ * Grouped below by destination topic for readability.  They are added to
+ * their respective eqs_*[] arrays in §3.
+ * ========================================================================= */
+
+/* --- Topic 0 (PIB) --- */
+
+/* De Broglie Kinetic Energy:  E_kin = h^2 / (2 m lambda^2)
+ * Derived by substituting p = h/lambda into E_kin = p^2 / (2m). */
+static MathNode *eq_debroglie_ke(void)
+{
+    MathNode *h2  = math_superscript(math_text("h"), math_number("2"));
+    MathNode *lam2 = math_superscript(math_symbol("lambda"), math_number("2"));
+    MathNode *den_k[] = { math_number("2"), math_text("m"), lam2 };
+    MathNode *parts[] = {
+        math_subscript(math_text("E"), math_text("kin")),
+        math_text(" = "),
+        math_fraction(h2, row_of(den_k, 3))
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 2 (Harmonic Oscillator & Rotor) --- */
+
+/* Classical Kinetic Energy:  E_kin = (1/2) m v^2 */
+static MathNode *eq_classical_ke(void)
+{
+    MathNode *half = math_fraction(math_number("1"), math_number("2"));
+    MathNode *v2   = math_superscript(math_text("v"), math_number("2"));
+    MathNode *parts[] = {
+        math_subscript(math_text("E"), math_text("kin")),
+        math_text(" = "),
+        half,
+        math_text("m"),
+        v2
+    };
+    return row_of(parts, 5);
+}
+
+/* Classical HO Position:  x(t) = x_0 cos(omega t) */
+static MathNode *eq_ho_position(void)
+{
+    MathNode *arg_k[] = { math_symbol("omega"), math_text("t") };
+    MathNode *parts[] = {
+        math_text("x(t) = "),
+        math_subscript(math_text("x"), math_number("0")),
+        math_text(" cos"),
+        math_paren(row_of(arg_k, 2))
+    };
+    return row_of(parts, 4);
+}
+
+/* Classical HO Force:  F(t) = -k x(t) = mu * d^2x/dt^2 */
+static MathNode *eq_ho_force(void)
+{
+    /* Render the second derivative as the fraction d^2 x / d t^2 */
+    MathNode *d2x_k[] = {
+        math_superscript(math_text("d"), math_number("2")),
+        math_text("x")
+    };
+    MathNode *dt2_k[] = {
+        math_text("d"),
+        math_superscript(math_text("t"), math_number("2"))
+    };
+    MathNode *deriv = math_fraction(row_of(d2x_k, 2), row_of(dt2_k, 2));
+    MathNode *parts[] = {
+        math_text("F = -kx = "),
+        math_symbol("mu"),
+        deriv
+    };
+    return row_of(parts, 3);
+}
+
+/* Angular Frequency:  omega = sqrt(k / mu) */
+static MathNode *eq_angular_frequency(void)
+{
+    MathNode *parts[] = {
+        math_symbol("omega"),
+        math_text(" = "),
+        math_sqrt(math_fraction(math_text("k"), math_symbol("mu")))
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 3 (Diatomic Spectroscopy) --- */
+
+/* Wavenumber compact form:  nu_tilde = lambda^(-1) */
+static MathNode *eq_wavenumber_inv(void)
+{
+    MathNode *parts[] = {
+        math_bar(math_symbol("nu")),
+        math_text(" = "),
+        math_superscript(math_symbol("lambda"), math_text("-1"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Frequency-Wavelength Relation:  nu = c / lambda */
+static MathNode *eq_freq_wavelength(void)
+{
+    MathNode *parts[] = {
+        math_symbol("nu"),
+        math_text(" = "),
+        math_fraction(math_text("c"), math_symbol("lambda"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Bond Force Constant:  k = 4 pi^2 nu^2 mu */
+static MathNode *eq_bond_force_constant(void)
+{
+    MathNode *pi2 = math_superscript(math_symbol("pi"), math_number("2"));
+    MathNode *nu2 = math_superscript(math_symbol("nu"), math_number("2"));
+    MathNode *parts[] = {
+        math_text("k = "),
+        math_number("4"),
+        pi2,
+        nu2,
+        math_symbol("mu")
+    };
+    return row_of(parts, 5);
+}
+
+/* --- Topic 4 (Hydrogen Atom) — Step 2.5 additions --- */
+
+/* Most Probable Radius — optimization condition:  d/dr [ P_1s(r) dr ] = 0
+ * Shows the exact differential condition used to find r_mp = a0.
+ * The existing eq_most_probable_radius() also displays the solved result. */
+static MathNode *eq_most_prob_condition(void)
+{
+    /* d/dr as a fraction */
+    MathNode *ddr = math_fraction(math_text("d"), math_text("dr"));
+    /* Inner: P_1s(r) dr */
+    MathNode *P_dr_k[] = {
+        math_subscript(math_text("P"), math_text("1s")),
+        math_text("(r) dr")
+    };
+    MathNode *parts[] = {
+        ddr,
+        math_paren(row_of(P_dr_k, 2)),
+        math_text(" = 0")
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 5 (Many-Electron Atoms) — Step 2.5 additions --- */
+
+/* Slater Determinant for Beryllium (N = 4):
+ *   Psi = 1/sqrt(4!) det| 1s_a  1s_b  2s_a  2s_b |
+ * The general N-electron form is eq_slater_determinant(). */
+static MathNode *eq_slater_be(void)
+{
+    /* Normalisation prefactor: 1 / sqrt(4!) */
+    MathNode *fact4_k[] = { math_number("4"), math_text("!") };
+    MathNode *prefactor = math_fraction(
+        math_number("1"),
+        math_sqrt(row_of(fact4_k, 2)));
+
+    /* Spin-orbital column labels (ASCII surrogate: alpha->a, beta->b) */
+    MathNode *col1 = math_subscript(math_text("1s"), math_symbol("alpha"));
+    MathNode *col2 = math_subscript(math_text("1s"), math_symbol("beta"));
+    MathNode *col3 = math_subscript(math_text("2s"), math_symbol("alpha"));
+    MathNode *col4 = math_subscript(math_text("2s"), math_symbol("beta"));
+
+    MathNode *det_k[] = {
+        math_text("det|"),
+        col1, math_text(" "),
+        col2, math_text(" "),
+        col3, math_text(" "),
+        col4, math_text("|")
+    };
+    MathNode *parts[] = {
+        math_symbol("Psi"), math_text(" = "),
+        prefactor,
+        row_of(det_k, 9)
+    };
+    return row_of(parts, 4);
+}
+
+/* Multi-Electron / Multi-Nuclei Hamiltonian — H2^- explicit form
+ * (3 electrons, 2 proton nuclei A and B; Z_A = Z_B = 1).
+ *
+ * H = -(hbar^2/2me)(nabla_1^2 + nabla_2^2 + nabla_3^2)
+ *     - (e^2 Z_A / 4pi eps0)(1/r_1A + 1/r_2A + 1/r_3A)
+ *     - (e^2 Z_B / 4pi eps0)(1/r_1B + ...)
+ *     + (e^2 / 4pi eps0)(1/r_12 + ...)
+ *     + e^2 Z_A Z_B / (4pi eps0 R_AB)
+ *
+ * The general condensed form (with Sigma notation) is eq_molecular_hamiltonian().
+ * Dynamic wrapping (render_equation_wrapped) will split this across lines. */
+static MathNode *eq_h2minus_hamiltonian(void)
+{
+    /* Kinetic factor: -hbar^2 / (2 m_e) */
+    MathNode *hb2 = math_superscript(math_bar(math_text("h")),
+                                     math_number("2"));
+    MathNode *kin_den_k[] = {
+        math_number("2"),
+        math_subscript(math_text("m"), math_text("e"))
+    };
+    MathNode *kin_factor = math_fraction(hb2, row_of(kin_den_k, 2));
+
+    /* nabla_i^2 for i = 1, 2, 3 */
+    MathNode *g1 = math_superscript(
+        math_subscript(math_symbol("nabla"), math_number("1")),
+        math_number("2"));
+    MathNode *g2 = math_superscript(
+        math_subscript(math_symbol("nabla"), math_number("2")),
+        math_number("2"));
+    MathNode *g3 = math_superscript(
+        math_subscript(math_symbol("nabla"), math_number("3")),
+        math_number("2"));
+    MathNode *kin_sum_k[] = {
+        g1, math_text(" + "), g2, math_text(" + "), g3
+    };
+
+    /* Electron-nucleus attraction coefficient: e^2 Z_A / (4 pi eps0) */
+    MathNode *e2a = math_superscript(math_text("e"), math_number("2"));
+    MathNode *Za  = math_subscript(math_text("Z"), math_text("A"));
+    MathNode *atr_num_k[] = { e2a, Za };
+    MathNode *atr_den_k[] = {
+        math_number("4"), math_symbol("pi"),
+        math_subscript(math_symbol("epsilon"), math_number("0"))
+    };
+    MathNode *atr_factor = math_fraction(
+        row_of(atr_num_k, 2), row_of(atr_den_k, 3));
+
+    /* Sum 1/r_iA for i = 1,2,3 */
+    MathNode *r1A = math_fraction(math_number("1"),
+        math_subscript(math_text("r"), math_text("1A")));
+    MathNode *r2A = math_fraction(math_number("1"),
+        math_subscript(math_text("r"), math_text("2A")));
+    MathNode *r3A = math_fraction(math_number("1"),
+        math_subscript(math_text("r"), math_text("3A")));
+    MathNode *attrA_k[] = {
+        r1A, math_text(" + "), r2A, math_text(" + "), r3A
+    };
+
+    /* Electron-electron repulsion: e^2 / (4 pi eps0) */
+    MathNode *e2b = math_superscript(math_text("e"), math_number("2"));
+    MathNode *rep_den_k[] = {
+        math_number("4"), math_symbol("pi"),
+        math_subscript(math_symbol("epsilon"), math_number("0"))
+    };
+    MathNode *rep_factor = math_fraction(e2b, row_of(rep_den_k, 3));
+    MathNode *rep12 = math_fraction(math_number("1"),
+        math_subscript(math_text("r"), math_text("12")));
+    MathNode *rep13 = math_fraction(math_number("1"),
+        math_subscript(math_text("r"), math_text("13")));
+    MathNode *rep23 = math_fraction(math_number("1"),
+        math_subscript(math_text("r"), math_text("23")));
+    MathNode *rep_k[] = {
+        rep12, math_text(" + "), rep13, math_text(" + "), rep23
+    };
+
+    /* Nucleus-nucleus repulsion: e^2 Z_A Z_B / (4 pi eps0 R_AB) */
+    MathNode *e2c = math_superscript(math_text("e"), math_number("2"));
+    MathNode *nn_num_k[] = {
+        e2c,
+        math_subscript(math_text("Z"), math_text("A")),
+        math_subscript(math_text("Z"), math_text("B"))
+    };
+    MathNode *nn_den_k[] = {
+        math_number("4"), math_symbol("pi"),
+        math_subscript(math_symbol("epsilon"), math_number("0")),
+        math_subscript(math_text("R"), math_text("AB"))
+    };
+    MathNode *nn_term = math_fraction(
+        row_of(nn_num_k, 3), row_of(nn_den_k, 4));
+
+    MathNode *parts[] = {
+        math_hat(math_text("H")), math_text(" = -"),
+        kin_factor, math_paren(row_of(kin_sum_k, 5)),
+        math_text(" - "),
+        atr_factor, math_paren(row_of(attrA_k, 5)),
+        math_text(" - ... + "),
+        rep_factor, math_paren(row_of(rep_k, 5)),
+        math_text(" + "), nn_term
+    };
+    return row_of(parts, 12);
+}
+
+/* Overlap Integral — symmetric form:
+ *   S_12 = <phi_1s(1)|phi_1s(2)> = <phi_1s(2)|phi_1s(1)>
+ * Demonstrates the exchange-symmetry property not shown in eq_overlap_integral(). */
+static MathNode *eq_overlap_symmetric(void)
+{
+    /* <phi_1s(1)|phi_1s(2)> */
+    MathNode *phi1 = row_of((MathNode*[]){
+        math_subscript(math_symbol("phi"), math_text("1s")),
+        math_paren(math_number("1"))
+    }, 2);
+    MathNode *phi2 = row_of((MathNode*[]){
+        math_subscript(math_symbol("phi"), math_text("1s")),
+        math_paren(math_number("2"))
+    }, 2);
+    /* <phi_1s(2)|phi_1s(1)> (swapped) */
+    MathNode *phi2b = row_of((MathNode*[]){
+        math_subscript(math_symbol("phi"), math_text("1s")),
+        math_paren(math_number("2"))
+    }, 2);
+    MathNode *phi1b = row_of((MathNode*[]){
+        math_subscript(math_symbol("phi"), math_text("1s")),
+        math_paren(math_number("1"))
+    }, 2);
+
+    MathNode *S12_k[] = { math_number("1"), math_number("2") };
+    MathNode *parts[] = {
+        math_subscript(math_text("S"), row_of(S12_k, 2)),
+        math_text(" = "),
+        math_braket(phi1, phi2),
+        math_text(" = "),
+        math_braket(phi2b, phi1b)
+    };
+    return row_of(parts, 5);
+}
+
+/* Hybrid Orbital Constraints — general Dirac bracket form:
+ *   <psi|psi> = 1    (normalisation)
+ *   <psi_1|psi_2> = 0  (orthogonality)
+ * The sp-specific evaluated forms are eq_sp_normalization() / eq_sp_orthogonality(). */
+static MathNode *eq_hybrid_constraints(void)
+{
+    /* Normalisation: <psi|psi> = 1 */
+    MathNode *norm_bk = math_braket(math_symbol("psi"), math_symbol("psi"));
+    MathNode *norm_k[] = { norm_bk, math_text(" = 1") };
+
+    /* Orthogonality: <psi_1|psi_2> = 0 */
+    MathNode *orth_bk = math_braket(
+        math_subscript(math_symbol("psi"), math_number("1")),
+        math_subscript(math_symbol("psi"), math_number("2")));
+    MathNode *orth_k[] = { orth_bk, math_text(" = 0") };
+
+    MathNode *parts[] = {
+        row_of(norm_k, 2),
+        math_text(" ; "),
+        row_of(orth_k, 2)
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 4 (Hydrogen Atom) --- */
+
+/* Radial Probability Distribution (definitional form):
+ *   P_1s(r) dr = psi_1s* psi_1s r^2 dr
+ * This shows the origin from |psi|^2 dV with spherical Jacobian r^2.
+ * The evaluated form (4r^2/a0^3 * e^(-2r/a0)) is eq_radial_probability(). */
+static MathNode *eq_radial_prob_def(void)
+{
+    MathNode *psi_star = math_superscript(
+        math_subscript(math_symbol("psi"), math_text("1s")),
+        math_text("*"));
+    MathNode *psi  = math_subscript(math_symbol("psi"), math_text("1s"));
+    MathNode *r2   = math_superscript(math_text("r"), math_number("2"));
+    MathNode *lhs_k[] = {
+        math_subscript(math_text("P"), math_text("1s")),
+        math_text("(r) dr = ")
+    };
+    MathNode *rhs_k[] = { psi_star, psi, r2, math_text(" dr") };
+    MathNode *parts[] = {
+        row_of(lhs_k, 2),
+        row_of(rhs_k, 4)
+    };
+    return row_of(parts, 2);
+}
+
 /* -------------------------------------------------------------------------
  * NEW (v4) - TOPIC 6: Statistical Mechanics (Lecture 13)
  * -------------------------------------------------------------------------
  * Permutations / combinations, microstate weights, Boltzmann distribution,
  * partition function, beta = 1/(kT), R = k Na, expectation value.
  * ------------------------------------------------------------------------- */
-
-/* Permutations with repetition:  N = n^r */
-static MathNode *eq_perm_with_rep(void)
-{
-    MathNode *parts[] = {
-        math_subscript(math_text("N"), math_text("config")),
-        math_text(" = "),
-        math_superscript(math_text("n"), math_text("r"))
-    };
-    return row_of(parts, 3);
-}
-
-/* Permutations without repetition:  N = n! / (n - r)! */
-static MathNode *eq_perm_without_rep(void)
-{
-    MathNode *num_k[] = { math_text("n"), math_text("!") };
-    MathNode *nmr_k[] = {
-        math_text("("), math_text("n"), math_text(" - "),
-        math_text("r"), math_text(")"), math_text("!")
-    };
-    MathNode *parts[] = {
-        math_subscript(math_text("N"), math_text("config")),
-        math_text(" = "),
-        math_fraction(row_of(num_k, 2), row_of(nmr_k, 6))
-    };
-    return row_of(parts, 3);
-}
-
-/* Combinations without repetition:  N = n! / ( r! (n - r)! ) */
-static MathNode *eq_comb_without_rep(void)
-{
-    MathNode *num_k[] = { math_text("n"), math_text("!") };
-    MathNode *nmr_k[] = {
-        math_text("("), math_text("n"), math_text(" - "),
-        math_text("r"), math_text(")"), math_text("!")
-    };
-    MathNode *den_k[] = {
-        math_text("r"), math_text("!"),
-        row_of(nmr_k, 6)
-    };
-    MathNode *parts[] = {
-        math_subscript(math_text("N"), math_text("config")),
-        math_text(" = "),
-        math_fraction(row_of(num_k, 2), row_of(den_k, 3))
-    };
-    return row_of(parts, 3);
-}
-
-/* Microstate weight:  W = N! / (Pi_j a_j!) */
-static MathNode *eq_microstate_weight(void)
-{
-    /* Numerator: N! */
-    MathNode *num_k[] = { math_text("N"), math_text("!") };
-
-    /* Denominator: product (Pi_j) of a_j! */
-    MathNode *den_inner_k[] = {
-        math_subscript(math_text("a"), math_text("j")),
-        math_text("!")
-    };
-    MathNode *den_k[] = {
-        math_symbol("Pi"),
-        math_subscript(math_text(""), math_text("j")),
-        math_text(" "),
-        row_of(den_inner_k, 2)
-    };
-
-    MathNode *parts[] = {
-        math_text("W = "),
-        math_fraction(row_of(num_k, 2), row_of(den_k, 4))
-    };
-    return row_of(parts, 2);
-}
 
 /* Probability of microstate:  P_i = W_i / sum_j W_j */
 static MathNode *eq_microstate_probability(void)
@@ -1101,6 +1396,13 @@ static const EquationEntry eqs_pib[] = {
       "k               : Boltzmann constant (1.38e-23 J/K)\n"
       "T               : absolute temperature (K)\n"
       "Apply with E_n from a 1D box for HOMO/LUMO energies." },
+    { "De Broglie Kinetic Energy",
+      eq_debroglie_ke,
+      "E_kin  : kinetic energy of the particle\n"
+      "h      : Planck's constant (6.626e-34 J*s)\n"
+      "m      : particle mass\n"
+      "lambda : de Broglie wavelength\n"
+      "Derived by substituting p = h/lambda into E = p^2/(2m)." },
 };
 
 static const KeywordEntry kws_pib[] = {
@@ -1179,6 +1481,32 @@ static const EquationEntry eqs_oscillator[] = {
       "hbar  : reduced Planck's constant\n"
       "J     : rotational quantum number (0, 1, 2, ...)\n"
       "I     : moment of inertia" },
+    { "Classical Kinetic Energy",
+      eq_classical_ke,
+      "E_kin : classical kinetic energy\n"
+      "m     : mass of the particle\n"
+      "v     : velocity\n"
+      "Provides the kinetic term foundation for the quantum HO." },
+    { "Classical HO Position",
+      eq_ho_position,
+      "x(t)  : displacement from equilibrium at time t\n"
+      "x_0   : amplitude (maximum displacement)\n"
+      "omega : angular frequency (rad/s)\n"
+      "The classical solution is a pure cosine oscillation." },
+    { "Classical HO Force",
+      eq_ho_force,
+      "F     : restoring force (Hooke's Law: F = -kx)\n"
+      "k     : force constant (bond stiffness, N/m)\n"
+      "mu    : reduced mass of the oscillating pair\n"
+      "d^2x/dt^2 : acceleration (second time derivative)\n"
+      "Equating -kx = mu * d^2x/dt^2 gives the HO equation of motion." },
+    { "Angular Frequency",
+      eq_angular_frequency,
+      "omega : angular frequency (rad/s)\n"
+      "k     : force constant\n"
+      "mu    : reduced mass\n"
+      "Substituting into the force equation yields ddot_x = -omega^2 x,\n"
+      "confirming simple harmonic motion with frequency omega." },
 };
 
 static const KeywordEntry kws_oscillator[] = {
@@ -1244,6 +1572,25 @@ static const EquationEntry eqs_spectroscopy[] = {
       "Delta n : change in vibrational quantum number\n"
       "+1 for absorption, -1 for emission\n"
       "Also required: nonzero transition dipole." },
+    { "Wavenumber (inverse form)",
+      eq_wavenumber_inv,
+      "nu_tilde : wavenumber (cm^-1), standard FTIR unit\n"
+      "lambda   : wavelength\n"
+      "Compact notation: nu_tilde = 1/lambda = lambda^-1." },
+    { "Frequency-Wavelength Relation",
+      eq_freq_wavelength,
+      "nu     : frequency (Hz)\n"
+      "c      : speed of light (~3.0e8 m/s in vacuum)\n"
+      "lambda : wavelength (m)\n"
+      "Combine with nu_tilde = 1/lambda to convert units." },
+    { "Bond Force Constant",
+      eq_bond_force_constant,
+      "k   : bond force constant (N/m)\n"
+      "pi  : mathematical constant pi\n"
+      "nu  : vibrational frequency (Hz)\n"
+      "mu  : reduced mass of the diatomic pair\n"
+      "Derived from omega = sqrt(k/mu) with omega = 2 pi nu;\n"
+      "rearranging gives k = 4 pi^2 nu^2 mu." },
 };
 
 static const KeywordEntry kws_spectroscopy[] = {
@@ -1327,6 +1674,14 @@ static const EquationEntry eqs_hydrogen[] = {
       "a0     : Bohr radius (~= 52.9 pm)\n"
       "r      : electron distance from the nucleus\n"
       "The 1s orbital is spherically symmetric and nodeless." },
+    { "Radial Probability Distribution",
+      eq_radial_prob_def,
+      "P_1s(r) dr : probability of finding electron in shell [r, r+dr]\n"
+      "psi_1s*    : complex conjugate of the 1s wavefunction\n"
+      "psi_1s     : 1s wavefunction\n"
+      "r^2 dr     : Jacobian from spherical volume element dV = 4pi r^2 dr\n"
+      "This is the definitional form; substituting psi_1s gives the\n"
+      "evaluated result P_1s(r) = (4/a0^3) r^2 exp(-2r/a0)." },
     { "Radial Probability P_1s(r)",
       eq_radial_probability,
       "P_1s(r) : probability of finding electron in a spherical\n"
@@ -1339,6 +1694,13 @@ static const EquationEntry eqs_hydrogen[] = {
       "For the hydrogen 1s orbital the result is r_mp = a0,\n"
       "so the electron is most likely found at exactly the\n"
       "Bohr radius from the nucleus." },
+    { "Most Probable Radius (Optimization)",
+      eq_most_prob_condition,
+      "Optimization condition: differentiate P_1s(r) dr with\n"
+      "respect to r and set to zero to locate the maximum.\n"
+      "The 'dr' is the radial shell element; P_1s(r) dr is\n"
+      "the full probability element to be extremised.\n"
+      "Solving gives r_mp = a0 for the hydrogen 1s orbital." },
 };
 
 static const KeywordEntry kws_hydrogen[] = {
@@ -1487,6 +1849,39 @@ static const EquationEntry eqs_multielectron[] = {
       "c1^2 + c5^2 = 1.  The 2p_x orbital likewise:\n"
       "c2^2 + c6^2 = 1.  Combined with normalisation and\n"
       "orthogonality this uniquely fixes the coefficients." },
+    { "Slater Determinant (Beryllium)",
+      eq_slater_be,
+      "Psi   : antisymmetric 4-electron wavefunction for Be\n"
+      "4!    : 24 (factorial of electron count N = 4)\n"
+      "1s_a  : 1s orbital with alpha spin (spin-up)\n"
+      "1s_b  : 1s orbital with beta spin (spin-down)\n"
+      "2s_a  : 2s orbital with alpha spin\n"
+      "2s_b  : 2s orbital with beta spin\n"
+      "det|...|: each column is a spin-orbital; rows are electrons.\n"
+      "Swapping two electrons (rows) flips the sign -> Pauli." },
+    { "H2^- Hamiltonian (explicit)",
+      eq_h2minus_hamiltonian,
+      "H2^- : 3 electrons, 2 proton nuclei (Z_A = Z_B = 1)\n"
+      "Kinetic : -(hbar^2/2me)(nabla_1^2 + nabla_2^2 + nabla_3^2)\n"
+      "Attract : -(e^2 Z_A/4pi eps0)(1/r_1A + 1/r_2A + 1/r_3A)\n"
+      "          plus symmetric Z_B nucleus terms (abbreviated '...')\n"
+      "Repuls  : +(e^2/4pi eps0)(1/r_12 + 1/r_13 + 1/r_23)\n"
+      "NN      : +e^2 Z_A Z_B / (4pi eps0 R_AB)" },
+    { "Overlap Integral (symmetric)",
+      eq_overlap_symmetric,
+      "S_12 = <phi_1s(1)|phi_1s(2)> = <phi_1s(2)|phi_1s(1)>\n"
+      "Demonstrates exchange symmetry: S_12 is real and\n"
+      "invariant under swapping the two electron labels.\n"
+      "phi_1s(i): 1s atomic orbital for electron i\n"
+      "S_12 -> 0 as nuclei separate; S_12 -> 1 if identical." },
+    { "Hybrid Orbital Constraints",
+      eq_hybrid_constraints,
+      "General constraints on hybrid orbital coefficients:\n"
+      "<psi|psi> = 1     (normalisation: unit probability)\n"
+      "<psi_1|psi_2> = 0 (orthogonality: independent orbitals)\n"
+      "Apply to sp, sp2, sp3 hybrids on any atom.  Together\n"
+      "with the equal-contribution rule these constraints\n"
+      "uniquely determine all mixing coefficients." },
 };
 
 static const KeywordEntry kws_multielectron[] = {
@@ -1633,30 +2028,6 @@ static const char *desc_statmech =
     "the Boltzmann distribution.";
 
 static const EquationEntry eqs_statmech[] = {
-    { "Permutations (with repetition)",
-      eq_perm_with_rep,
-      "N_config : number of ordered sequences\n"
-      "n        : items to choose from\n"
-      "r        : items selected\n"
-      "Items may be reused (e.g. combination-lock dial)." },
-    { "Permutations (without repetition)",
-      eq_perm_without_rep,
-      "N_config : number of ordered sequences\n"
-      "n!       : factorial of total items\n"
-      "(n-r)!   : factorial of leftover items\n"
-      "Each item used at most once." },
-    { "Combinations (without repetition)",
-      eq_comb_without_rep,
-      "N_config : number of unordered selections\n"
-      "n        : items to choose from\n"
-      "r        : items selected\n"
-      "Same as permutations divided by r! (order ignored)." },
-    { "Microstate Weight W",
-      eq_microstate_weight,
-      "W   : number of microstates with this occupation pattern\n"
-      "N   : total particles, N = sum a_j\n"
-      "a_j : occupation of energy level j\n"
-      "Pi_j a_j! : product of factorials over all levels." },
     { "Microstate Probability",
       eq_microstate_probability,
       "P_i  : probability of configuration i\n"
@@ -1713,17 +2084,6 @@ static const KeywordEntry kws_statmech[] = {
       "A particular pattern of occupation numbers (a0, a1, a2, ...) "
       "across energy levels, ignoring which specific particle is in "
       "which level." },
-    { "Permutation (with repetition)",
-      "Ordered sequence in which items may be reused.  Count = n^r." },
-    { "Permutation (without repetition)",
-      "Ordered sequence in which each item is used at most once.  "
-      "Count = n! / (n - r)!." },
-    { "Combination (without repetition)",
-      "Unordered selection in which each item is used at most once.  "
-      "Count = n! / (r! (n - r)!) = binomial(n, r)." },
-    { "Weight W",
-      "Number of microstates that share a given occupation pattern.  "
-      "W = N! / (Pi_j a_j!)." },
     { "Dominant Configuration",
       "Configuration with the largest weight.  At Avogadro-scale "
       "particle numbers it is the only configuration ever observed." },
@@ -2067,8 +2427,8 @@ static MathNode *build_row_chunk(MathNode **src, int start, int end,
  * chunk rows it constructs).  Callers should reset the pool before
  * the parent draw pass that calls this.
  */
-static int render_equation_wrapped(MathNode *root, int x, int start_y,
-                                   int max_w, int draw)
+int render_equation_wrapped(MathNode *root, int x, int start_y,
+                             int max_w, int draw)
 {
     if (!root) return 0;
 

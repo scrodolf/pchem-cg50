@@ -122,6 +122,19 @@ void submenu_draw(const SubMenuScreen *sm);
 int  submenu_handle_key(SubMenuScreen *sm, key_event_t ev);
 
 /* -----------------------------------------------------------------------
+ * render_equation_wrapped — render a MathNode tree with dynamic line-
+ * wrapping across the available width.  Wide MATH_ROW trees are split at
+ * operator children (=, +, -); non-row trees fall back to FONT_SMALL.
+ * Returns total pixel height consumed.  draw==0 for measure-only pass.
+ *
+ * The math-node pool is NOT reset inside this function; callers must
+ * call render_pool_reset() before each equation when iterating many
+ * equations (e.g. in formula.c) to avoid pool exhaustion.
+ * ----------------------------------------------------------------------- */
+int render_equation_wrapped(MathNode *tree, int x, int y,
+                             int avail_w, int draw);
+
+/* -----------------------------------------------------------------------
  * Topic content screen API
  * ----------------------------------------------------------------------- */
 void topic_init(TopicScreen *ts, TopicID topic, SubtopicID subtopic);

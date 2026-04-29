@@ -81,6 +81,8 @@ typedef enum {
     STATE_SUBMENU,          /* Per-topic submenu: Desc/Eqns/Keywords        */
     STATE_TOPIC_VIEW,       /* Actual content screen for one subtopic       */
     STATE_NAVIGATION,       /* Global keyword/symbol navigator              */
+    STATE_FORMULA,          /* Formula Guide: all equations by topic        */
+    STATE_GREEKSYMBOLS,     /* Greek Symbols dictionary                     */
     STATE_EXIT              /* Sentinel: triggers clean shutdown            */
 } AppState;
 
@@ -90,8 +92,8 @@ typedef enum {
  * ----------------------------------------------------------------------- */
 #define NUM_TOPICS  7
 
-/* Total entries on the main menu = topics + 1 (Navigation) */
-#define NUM_MAIN_MENU_ENTRIES  (NUM_TOPICS + 1)
+/* Total entries on the main menu = topics + 3 (Navigation, Formula, Greek) */
+#define NUM_MAIN_MENU_ENTRIES  (NUM_TOPICS + 3)
 
 /* -----------------------------------------------------------------------
  * Topic IDs - index into the topics array
@@ -111,7 +113,9 @@ typedef enum {
     TOPIC_MULTIELECTRON,    /* Many-electron atoms, HF, configurations     */
     TOPIC_STATMECH,         /* Statistical mechanics: Boltzmann, partition */
 
-    TOPIC_NAVIGATION_MARKER = 100  /* sentinel for the main-menu router */
+    TOPIC_NAVIGATION_MARKER    = 100,  /* sentinel for Navigation tab    */
+    TOPIC_FORMULA_MARKER       = 101,  /* sentinel for Formula Guide tab */
+    TOPIC_GREEKSYMBOLS_MARKER  = 102   /* sentinel for Greek Symbols tab */
 } TopicID;
 
 /* -----------------------------------------------------------------------
