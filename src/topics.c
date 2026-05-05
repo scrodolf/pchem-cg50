@@ -1474,6 +1474,161 @@ static MathNode *eq_two_level_population(void)
     return row_of(parts, 3);
 }
 
+}
+
+/* =========================================================================
+ * render_equation_wrapped  (declared in topics.h; defined here)
+ * =========================================================================
+ *
+ * Renders a MathNode tree into at most avail_w pixels of horizontal space,
+ * wrapping long MATH_ROW trees across multiple lines at whitespace-padded
+ * operator tokens (" = ", " + ", " - ").
+ *
+ * Algorithm
+ * ---------
+ * 1. Normal layout.  If it fits, draw/measure and return.
+ * 2. Non-row tree or no operator split-points: demote to FONT_SMALL,
+ *    render in one line (may still overflow at extreme widths).
+ * 3. MATH_ROW with operator children: greedy left-to-right packing.
+ *    Non-final lines get a trailing "..." marker; non-first lines a
+ *    leading "..." marker.  Any chunk still too wide is demoted to
+ *    FONT_SMALL before drawing.
+ *
+ * draw == 0  →  measure-only (no VRAM writes); returns total height.
+ *
+ * The pool is NOT reset inside this function.  Callers must call
+ * render_pool_reset() before each equation when iterating many equations.
+ * ========================================================================= */
+
+#define WRAP_LINE_GAP   4     /* vertical gap between wrapped lines (px)   */
+#define WRAP_CONT_W    27     /* approximate pixel width of "..." marker    */
+
+int render_equation_wrapped(MathNode *tree, int x, int y,
+                             int avail_w, int draw)
+{
+    if (!tree) return 0;
+
+    render_layout(tree);
+
+    /* ---- Fast path: fits at FONT_NORMAL ---- */
+    if (tree->layout.w <= avail_w) {
+        if (draw) render_draw(tree, x, y);
+        return tree->layout.h;
+    }
+
+    /* ---- Non-row fallback: demote to FONT_SMALL, single line ---- */
+    if (tree->type != MATH_ROW) {
+        render_force_tier(tree, FONT_SMALL);
+        render_layout(tree);
+        if (draw) render_draw(tree, x, y);
+        return tree->layout.h;
+    }
+
+    /* ---- MATH_ROW: look for operator split-points ---- */
+    int count  = tree->d.row.count;
+    MathNode **ch = tree->d.row.children;
+
+    /* Children widths are valid from render_layout(tree) above */
+
+    /* Locate operator-child indices: tokens of the form " = ", " + ", " - " */
+    int op_idx[32];
+    int nops = 0;
+    for (int i = 0; i < count && nops < 31; i++) {
+        if (!ch[i]) continue;
+        if (ch[i]->type == MATH_TEXT) {
+            const char *t = ch[i]->d.leaf.text;
+            if (t && t[0] == ' ' &&
+                (t[1] == '=' || t[1] == '+' || t[1] == '-')) {
+                op_idx[nops++] = i;
+            }
+        }
+    }
+
+    /* No operator split-points → demote whole row to FONT_SMALL */
+    if (nops == 0) {
+        render_force_tier(tree, FONT_SMALL);
+        render_layout(tree);
+        if (draw) render_draw(tree, x, y);
+        return tree->layout.h;
+    }
+
+    /* ---- Greedy line-packing ---- */
+    int total_h = 0;
+    int cy      = y;
+    int start   = 0;   /* first child index of the current line */
+    int line_no = 0;
+
+    while (start < count) {
+        int is_first = (line_no == 0);
+
+        /* Budget: subtract space for continuation markers */
+        int prefix_w = is_first ? 0 : WRAP_CONT_W;
+        int budget   = avail_w - prefix_w - WRAP_CONT_W;
+
+        /* Greedy walk: accumulate children until budget is exceeded */
+        int last_op_split = -1;   /* best operator-based break point */
+        int running_w     = 0;
+        int fit_end       = start;
+
+        for (int i = start; i < count; i++) {
+            if (!ch[i]) { fit_end = i + 1; continue; }
+            if (running_w + ch[i]->layout.w > budget && fit_end > start)
+                break;
+            running_w += ch[i]->layout.w;
+            fit_end = i + 1;
+
+            /* Record split candidate AFTER this operator */
+            if (ch[i]->type == MATH_TEXT) {
+                const char *t = ch[i]->d.leaf.text;
+                if (t && t[0] == ' ' &&
+                    (t[1] == '=' || t[1] == '+' || t[1] == '-'))
+                    last_op_split = i + 1;
+            }
+        }
+
+        /* Choose where this line ends */
+        int line_end;
+        if (fit_end >= count) {
+            line_end = count;              /* last line: take everything */
+        } else if (last_op_split > start) {
+            line_end = last_op_split;      /* clean break at operator */
+        } else {
+            line_end = (fit_end > start) ? fit_end : start + 1; /* force */
+        }
+
+        int is_last = (line_end >= count);
+
+        /* Assemble this line's child array */
+        MathNode *kids[68];
+        int ki = 0;
+        if (!is_first) kids[ki++] = math_text("...");
+        for (int i = start; i < line_end; i++)
+            if (ch[i]) kids[ki++] = ch[i];
+        if (!is_last)  kids[ki++] = math_text("...");
+
+        if (ki == 0) break;   /* safety valve */
+
+        MathNode *line = (ki == 1) ? kids[0] : math_row(kids, ki);
+        render_layout(line);
+
+        /* Demote this chunk if it's still too wide */
+        if (line->layout.w > avail_w) {
+            render_force_tier(line, FONT_SMALL);
+            render_layout(line);
+        }
+
+        if (draw) render_draw(line, x, cy);
+        cy      += line->layout.h + WRAP_LINE_GAP;
+        total_h += line->layout.h + WRAP_LINE_GAP;
+
+        start = line_end;
+        line_no++;
+        if (line_no > 16) break;   /* circuit-breaker: avoid infinite loop */
+    }
+
+    return total_h > 0 ? total_h : 14;
+}
+
 /* =========================================================================
  * §3  TOPIC CONTENT ARRAYS
  * ========================================================================= */
