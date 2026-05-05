@@ -4,12 +4,12 @@
  *
  * ORGANIZATION
  * ------------
- *   §1  Word-wrapping text helpers
- *   §2  Math equation builders (one per labelled equation per topic)
- *   §3  Per-topic equation arrays, keyword arrays, description strings
- *   §4  TopicContent aggregates, lookup helpers
- *   §5  Submenu implementation (topic -> Desc/Eq/Keyword chooser)
- *   §6  Topic content screen implementation (scrollable subtopic view)
+ * §1  Word-wrapping text helpers
+ * §2  Math equation builders (one per labelled equation per topic)
+ * §3  Per-topic equation arrays, keyword arrays, description strings
+ * §4  TopicContent aggregates, lookup helpers
+ * §5  Submenu implementation (topic -> Desc/Eq/Keyword chooser)
+ * §6  Topic content screen implementation (scrollable subtopic view)
  *
  * MEMORY / RENDERING CONTRACT
  * ---------------------------
@@ -162,9 +162,7 @@ static int draw_wrapped(const char *text, int x, int start_y, int max_w,
 /* Small inline wrapper -- clarity when building rows inline. */
 static MathNode *row_of(MathNode **kids, int n) { return math_row(kids, n); }
 
-/* ==========================================================================
- * TOPIC 0: Particle in a Box
- * ========================================================================== */
+/* ----- TOPIC 0: Particle in a Box ----- */
 
 /* hbar^2 = (h / (2 pi))^2 */
 static MathNode *eq_hbar_def(void)
@@ -196,7 +194,7 @@ static MathNode *eq_pib_eigen(void)
     MathNode *L2   = math_superscript(math_text("L"), math_number("2"));
     MathNode *rhs_num_k[] = { hb2b, n2, pi2 };
     MathNode *rhs_den_k[] = { math_number("2"), math_text("M"), L2 };
-    MathNode *psi_n = math_subscript(math_symbol("psi"), math_text("n"));
+    MathNode *psi_n  = math_subscript(math_symbol("psi"), math_text("n"));
     MathNode *psi_n2 = math_subscript(math_symbol("psi"), math_text("n"));
     MathNode *parts[] = {
         math_text("-"), ke_frac, d2dx2, psi_n,
@@ -244,56 +242,7 @@ static MathNode *eq_pib_probability(void)
     return row_of(parts, 5);
 }
 
-/* p_LUMO / p_HOMO = e^(-Delta E / kT) */
-static MathNode *eq_boltzmann_ratio(void)
-{
-    MathNode *DeltaE_k[] = { math_symbol("Delta"), math_text("E") };
-    MathNode *exp_num_k[] = {
-        math_text("-"), row_of(DeltaE_k, 2)
-    };
-    MathNode *exp_frac = math_fraction(row_of(exp_num_k, 2),
-                                       math_text("kT"));
-    MathNode *ratio = math_fraction(
-        math_subscript(math_text("p"), math_text("LUMO")),
-        math_subscript(math_text("p"), math_text("HOMO")));
-    MathNode *parts[] = {
-        ratio, math_text(" = "),
-        math_superscript(math_text("e"), exp_frac)
-    };
-    return row_of(parts, 3);
-}
-
-/* De Broglie kinetic energy: E_kin = h^2 / (2 m lambda^2) */
-static MathNode *eq_debroglie_ke(void)
-{
-    MathNode *h2  = math_superscript(math_text("h"), math_number("2"));
-    MathNode *lam2 = math_superscript(math_symbol("lambda"), math_number("2"));
-    MathNode *den_k[] = { math_number("2"), math_text("m"), lam2 };
-    MathNode *parts[] = {
-        math_subscript(math_text("E"), math_text("kin")),
-        math_text(" = "),
-        math_fraction(h2, row_of(den_k, 3))
-    };
-    return row_of(parts, 3);
-}
-
-/* ==========================================================================
- * TOPIC 1: Commutators & Spin
- * ========================================================================== */
-
-/* Heisenberg uncertainty: Delta x  Delta p >= hbar/2 */
-static MathNode *eq_uncertainty(void)
-{
-    MathNode *dx_k[] = { math_symbol("Delta"), math_text("x") };
-    MathNode *dp_k[] = { math_symbol("Delta"), math_text("p") };
-    MathNode *hbar2 = math_fraction(math_bar(math_text("h")), math_number("2"));
-    MathNode *parts[] = {
-        row_of(dx_k, 2), row_of(dp_k, 2),
-        math_text(" "), math_symbol("geq"), math_text(" "),
-        hbar2
-    };
-    return row_of(parts, 6);
-}
+/* ----- TOPIC 1: Commutators & Spin ----- */
 
 /* L_hat_z Psi_lm = m hbar Psi_lm  (orientation eigenvalue equation) */
 static MathNode *eq_lz_eigenvalue(void)
@@ -331,8 +280,8 @@ static MathNode *eq_l_squared(void)
 /* L_z values: m = +1 -> hbar, m = 0 -> 0, m = -1 -> -hbar */
 static MathNode *eq_lz_values(void)
 {
-    MathNode *Lz   = math_subscript(math_text("L"), math_text("z"));
-    MathNode *hbar = math_bar(math_text("h"));
+    MathNode *Lz    = math_subscript(math_text("L"), math_text("z"));
+    MathNode *hbar  = math_bar(math_text("h"));
     MathNode *hbar2 = math_bar(math_text("h"));
     MathNode *parts[] = {
         Lz, math_text("(m=1) = "), hbar,
@@ -440,9 +389,21 @@ static MathNode *eq_spin_squared(void)
     return row_of(parts, 5);
 }
 
-/* ==========================================================================
- * TOPIC 2: Harmonic Oscillator & Rotor
- * ========================================================================== */
+/* Heisenberg:  Delta x  Delta p  >=  hbar/2 */
+static MathNode *eq_uncertainty(void)
+{
+    MathNode *dx_k[] = { math_symbol("Delta"), math_text("x") };
+    MathNode *dp_k[] = { math_symbol("Delta"), math_text("p") };
+    MathNode *hbar2 = math_fraction(math_bar(math_text("h")), math_number("2"));
+    MathNode *parts[] = {
+        row_of(dx_k, 2), row_of(dp_k, 2),
+        math_text(" "), math_symbol("geq"), math_text(" "),
+        hbar2
+    };
+    return row_of(parts, 6);
+}
+
+/* ----- TOPIC 2: Harmonic Oscillator & Rotor ----- */
 
 /* E_v = hbar omega (v + 1/2) */
 static MathNode *eq_ho_energy(void)
@@ -475,140 +436,7 @@ static MathNode *eq_rotor_energy(void)
     return row_of(parts, 3);
 }
 
-/* E = (1/2) m v^2 = p^2 / (2m),  p = mv */
-static MathNode *eq_classical_energy_full(void)
-{
-    MathNode *half = math_fraction(math_number("1"), math_number("2"));
-    MathNode *v2   = math_superscript(math_text("v"), math_number("2"));
-    MathNode *p2   = math_superscript(math_text("p"), math_number("2"));
-    MathNode *parts[] = {
-        math_text("E = "),
-        half, math_text("m"), v2,
-        math_text(" = "),
-        math_fraction(p2, math_text("2m"))
-    };
-    return row_of(parts, 6);
-}
-
-/* X(t) = x_0 cos( sqrt(mu/k) * t ) */
-static MathNode *eq_ho_pos_sqrt(void)
-{
-    MathNode *arg_k[] = {
-        math_sqrt(math_fraction(math_symbol("mu"), math_text("k"))),
-        math_text("t")
-    };
-    MathNode *parts[] = {
-        math_text("X(t) = "),
-        math_subscript(math_text("x"), math_number("0")),
-        math_text(" cos"),
-        math_paren(row_of(arg_k, 2))
-    };
-    return row_of(parts, 4);
-}
-
-/* -k/m * x(t) = -omega^2  (from F = -kx = m*ddot_x => -k/m = ddot_x/x = -omega^2) */
-static MathNode *eq_omega_sq_relation(void)
-{
-    MathNode *neg_km = math_fraction(math_text("-k"), math_text("m"));
-    MathNode *om2    = math_superscript(math_symbol("omega"), math_number("2"));
-    MathNode *parts[] = {
-        neg_km, math_text(" x(t) = -"), om2
-    };
-    return row_of(parts, 3);
-}
-
-/* F(t) = -k x(t) = mu * d^2x/dt^2 */
-static MathNode *eq_ho_force(void)
-{
-    MathNode *d2x_k[] = {
-        math_superscript(math_text("d"), math_number("2")),
-        math_text("x")
-    };
-    MathNode *dt2_k[] = {
-        math_text("d"),
-        math_superscript(math_text("t"), math_number("2"))
-    };
-    MathNode *deriv = math_fraction(row_of(d2x_k, 2), row_of(dt2_k, 2));
-    MathNode *parts[] = {
-        math_text("F = -kx = "),
-        math_symbol("mu"),
-        deriv
-    };
-    return row_of(parts, 3);
-}
-
-/* omega = sqrt(k / mu) */
-static MathNode *eq_angular_frequency(void)
-{
-    MathNode *parts[] = {
-        math_symbol("omega"),
-        math_text(" = "),
-        math_sqrt(math_fraction(math_text("k"), math_symbol("mu")))
-    };
-    return row_of(parts, 3);
-}
-
-/* ==========================================================================
- * TOPIC 3: Diatomic Spectroscopy
- * ========================================================================== */
-
-/* I = mu r^2 */
-static MathNode *eq_moment_of_inertia(void)
-{
-    MathNode *parts[] = {
-        math_text("I"), math_text(" = "),
-        math_symbol("mu"),
-        math_superscript(math_text("r"), math_number("2"))
-    };
-    return row_of(parts, 4);
-}
-
-/* B = h / (8 pi^2 I)  (classic form) */
-static MathNode *eq_rotational_constant(void)
-{
-    MathNode *pi_sq = math_superscript(math_symbol("pi"), math_number("2"));
-    MathNode *den_k[] = { math_number("8"), pi_sq, math_text("I") };
-    MathNode *parts[] = {
-        math_text("B"), math_text(" = "),
-        math_fraction(math_text("h"), row_of(den_k, 3))
-    };
-    return row_of(parts, 3);
-}
-
-/* B = hbar^2 / (2I)  (hbar form, from LaTeX) */
-static MathNode *eq_rot_const_hbar(void)
-{
-    MathNode *hb2   = math_superscript(math_bar(math_text("h")), math_number("2"));
-    MathNode *den_k[] = { math_number("2"), math_text("I") };
-    MathNode *parts[] = {
-        math_text("B = "),
-        math_fraction(hb2, row_of(den_k, 2))
-    };
-    return row_of(parts, 2);
-}
-
-/* nu_tilde = 1/lambda = nu/c */
-static MathNode *eq_wavenumber(void)
-{
-    MathNode *parts[] = {
-        math_bar(math_symbol("nu")), math_text(" = "),
-        math_fraction(math_number("1"), math_symbol("lambda")),
-        math_text(" = "),
-        math_fraction(math_symbol("nu"), math_text("c"))
-    };
-    return row_of(parts, 5);
-}
-
-/* Delta n = +/- 1 */
-static MathNode *eq_selection_rule(void)
-{
-    MathNode *dn_k[] = { math_symbol("Delta"), math_text("n") };
-    MathNode *parts[] = {
-        row_of(dn_k, 2), math_text(" = "),
-        math_symbol("pm"), math_number("1")
-    };
-    return row_of(parts, 4);
-}
+/* ----- TOPIC 3: Diatomic Spectroscopy (FULL LECTURE 8 CONTENT) ----- */
 
 /* v * lambda = c  (unit relation) */
 static MathNode *eq_vl_c(void)
@@ -621,7 +449,19 @@ static MathNode *eq_vl_c(void)
     return row_of(parts, 3);
 }
 
-/* Delta E_R = hbar^2 (J+1) / I  (R-branch, 3D) */
+/* B = hbar^2 / (2I)  (hbar form) */
+static MathNode *eq_rot_const_hbar(void)
+{
+    MathNode *hb2   = math_superscript(math_bar(math_text("h")), math_number("2"));
+    MathNode *den_k[] = { math_number("2"), math_text("I") };
+    MathNode *parts[] = {
+        math_text("B = "),
+        math_fraction(hb2, row_of(den_k, 2))
+    };
+    return row_of(parts, 2);
+}
+
+/* Delta E_R = hbar^2 (J+1) / I  (R-branch) */
 static MathNode *eq_r_branch_energy(void)
 {
     MathNode *hb2   = math_superscript(math_bar(math_text("h")), math_number("2"));
@@ -638,7 +478,7 @@ static MathNode *eq_r_branch_energy(void)
     return row_of(parts, 3);
 }
 
-/* Delta E_P = -hbar^2 J / I  (P-branch, 3D) */
+/* Delta E_P = -hbar^2 J / I  (P-branch) */
 static MathNode *eq_p_branch_energy(void)
 {
     MathNode *hb2   = math_superscript(math_bar(math_text("h")), math_number("2"));
@@ -686,46 +526,75 @@ static MathNode *eq_bond_length_from_B(void)
     return row_of(parts, 2);
 }
 
-/* nu_tilde = lambda^(-1) */
-static MathNode *eq_wavenumber_inv(void)
+/* P_1/P_2 = e^(-Delta E / kT) = e^(-E_J / kT)  (rotational Boltzmann) */
+static MathNode *eq_boltzmann_rot_pop(void)
 {
-    MathNode *parts[] = {
-        math_bar(math_symbol("nu")),
-        math_text(" = "),
-        math_superscript(math_symbol("lambda"), math_text("-1"))
+    MathNode *ratio = math_fraction(
+        math_subscript(math_text("P"), math_number("1")),
+        math_subscript(math_text("P"), math_number("2")));
+    MathNode *DE_k[] = { math_symbol("Delta"), math_text("E") };
+    MathNode *exp1_num_k[] = { math_text("-"), row_of(DE_k, 2) };
+    MathNode *exp1_arg = math_fraction(row_of(exp1_num_k, 2), math_text("kT"));
+    MathNode *exp1 = math_superscript(math_text("e"), exp1_arg);
+    MathNode *EJ_k[] = {
+        math_text("-"),
+        math_subscript(math_text("E"), math_text("J"))
     };
-    return row_of(parts, 3);
-}
-
-/* nu = c / lambda */
-static MathNode *eq_freq_wavelength(void)
-{
+    MathNode *exp2_arg = math_fraction(row_of(EJ_k, 2), math_text("kT"));
+    MathNode *exp2 = math_superscript(math_text("e"), exp2_arg);
     MathNode *parts[] = {
-        math_symbol("nu"),
-        math_text(" = "),
-        math_fraction(math_text("c"), math_symbol("lambda"))
-    };
-    return row_of(parts, 3);
-}
-
-/* k = 4 pi^2 nu^2 mu */
-static MathNode *eq_bond_force_constant(void)
-{
-    MathNode *pi2 = math_superscript(math_symbol("pi"), math_number("2"));
-    MathNode *nu2 = math_superscript(math_symbol("nu"), math_number("2"));
-    MathNode *parts[] = {
-        math_text("k = "),
-        math_number("4"),
-        pi2,
-        nu2,
-        math_symbol("mu")
+        ratio, math_text(" = "), exp1, math_text(" = "), exp2
     };
     return row_of(parts, 5);
 }
 
-/* ==========================================================================
- * TOPIC 4: Hydrogen Atom
- * ========================================================================== */
+/* I = mu r^2 */
+static MathNode *eq_moment_of_inertia(void)
+{
+    MathNode *parts[] = {
+        math_text("I"), math_text(" = "),
+        math_symbol("mu"),
+        math_superscript(math_text("r"), math_number("2"))
+    };
+    return row_of(parts, 4);
+}
+
+/* B = h / (8 pi^2 I) */
+static MathNode *eq_rotational_constant(void)
+{
+    MathNode *pi_sq = math_superscript(math_symbol("pi"), math_number("2"));
+    MathNode *den_k[] = { math_number("8"), pi_sq, math_text("I") };
+    MathNode *parts[] = {
+        math_text("B"), math_text(" = "),
+        math_fraction(math_text("h"), row_of(den_k, 3))
+    };
+    return row_of(parts, 3);
+}
+
+/* nu_tilde = 1/lambda = nu/c */
+static MathNode *eq_wavenumber(void)
+{
+    MathNode *parts[] = {
+        math_bar(math_symbol("nu")), math_text(" = "),
+        math_fraction(math_number("1"), math_symbol("lambda")),
+        math_text(" = "),
+        math_fraction(math_symbol("nu"), math_text("c"))
+    };
+    return row_of(parts, 5);
+}
+
+/* Selection rule:  Delta n = +/- 1 */
+static MathNode *eq_selection_rule(void)
+{
+    MathNode *dn_k[] = { math_symbol("Delta"), math_text("n") };
+    MathNode *parts[] = {
+        row_of(dn_k, 2), math_text(" = "),
+        math_symbol("pm"), math_number("1")
+    };
+    return row_of(parts, 4);
+}
+
+/* ----- TOPIC 4: Hydrogen Atom (LECTURE 9) ----- */
 
 /* a_0 = (4 pi eps0 hbar^2) / (m_e e^2) */
 static MathNode *eq_bohr_radius(void)
@@ -750,7 +619,129 @@ static MathNode *eq_bohr_radius(void)
     return row_of(parts, 3);
 }
 
-/* psi_1s = (1 / sqrt(pi a0^3)) e^(-r/a0) */
+/* ----- TOPIC 5: Many-Electron Atoms ----- */
+
+/* Psi(r1,r2,...,rn) = psi1(r1) psi2(r2) ... psin(rn) */
+static MathNode *eq_separable_wavefunction(void)
+{
+    /* LHS: Psi(r1, r2, ..., rn) */
+    MathNode *lhs_args_k[] = {
+        math_subscript(math_text("r"), math_number("1")),
+        math_text(", "),
+        math_subscript(math_text("r"), math_number("2")),
+        math_text(", ... , "),
+        math_subscript(math_text("r"), math_text("n"))
+    };
+    MathNode *lhs_k[] = {
+        math_symbol("Psi"),
+        math_paren(row_of(lhs_args_k, 5))
+    };
+    MathNode *lhs = row_of(lhs_k, 2);
+
+    /* RHS: psi1(r1) psi2(r2) ... psin(rn) */
+    MathNode *p1_k[] = {
+        math_subscript(math_symbol("psi"), math_number("1")),
+        math_paren(math_subscript(math_text("r"), math_number("1")))
+    };
+    MathNode *p2_k[] = {
+        math_subscript(math_symbol("psi"), math_number("2")),
+        math_paren(math_subscript(math_text("r"), math_number("2")))
+    };
+    MathNode *pn_k[] = {
+        math_subscript(math_symbol("psi"), math_text("n")),
+        math_paren(math_subscript(math_text("r"), math_text("n")))
+    };
+
+    MathNode *parts[] = {
+        lhs, math_text(" = "),
+        row_of(p1_k, 2),
+        row_of(p2_k, 2),
+        math_text(" ... "),
+        row_of(pn_k, 2)
+    };
+    return row_of(parts, 6);
+}
+
+/* Effective 1-e Hamiltonian: H_n = -hbar^2/(2m) grad_n^2 + V_eff,n(r_n) */
+static MathNode *eq_effective_hamiltonian(void)
+{
+    MathNode *hb2 = math_superscript(math_bar(math_text("h")),
+                                     math_number("2"));
+    MathNode *den_k[] = { math_number("2"), math_text("m") };
+    /* grad_n^2 rendered as (nabla_n)^2 using the "nabla" symbol fallback */
+    MathNode *grad_n_sq = math_superscript(
+        math_subscript(math_symbol("nabla"), math_text("n")),
+        math_number("2"));
+    MathNode *V_eff_args_k[] = {
+        math_text("eff, n")
+    };
+    MathNode *V_eff = math_subscript(math_text("V"), row_of(V_eff_args_k, 1));
+
+    MathNode *parts[] = {
+        math_subscript(math_hat(math_text("H")), math_text("n")),
+        math_text(" = -"),
+        math_fraction(hb2, row_of(den_k, 2)),
+        grad_n_sq,
+        math_text(" + "),
+        V_eff,
+        math_paren(math_subscript(math_text("r"), math_text("n")))
+    };
+    return row_of(parts, 7);
+}
+
+/* Helium Hamiltonian -- displayed in compact form (5 terms) */
+static MathNode *eq_helium_hamiltonian(void)
+{
+    MathNode *hb2 = math_superscript(math_bar(math_text("h")),
+                                     math_number("2"));
+    MathNode *den_2m_k[] = {
+        math_number("2"),
+        math_subscript(math_text("m"), math_text("e"))
+    };
+    MathNode *kin_factor = math_fraction(hb2, row_of(den_2m_k, 2));
+    MathNode *grad1_sq = math_superscript(
+        math_subscript(math_symbol("nabla"), math_number("1")),
+        math_number("2"));
+    MathNode *grad2_sq = math_superscript(
+        math_subscript(math_symbol("nabla"), math_number("2")),
+        math_number("2"));
+
+    /* 2e^2 / (4 pi eps0 r1) -- simplified with text for compactness */
+    MathNode *e_sq = math_superscript(math_text("e"), math_number("2"));
+    MathNode *atr_num_k[] = { math_number("2"), e_sq };
+    MathNode *atr_den1_k[] = {
+        math_number("4"), math_symbol("pi"),
+        math_subscript(math_symbol("epsilon"), math_number("0")),
+        math_subscript(math_text("r"), math_number("1"))
+    };
+    MathNode *atr1 = math_fraction(row_of(atr_num_k, 2),
+                                   row_of(atr_den1_k, 4));
+
+    MathNode *e_sq_2 = math_superscript(math_text("e"), math_number("2"));
+    MathNode *r12_k[] = { math_number("1"), math_number("2") };
+    MathNode *rep_den_k[] = {
+        math_number("4"), math_symbol("pi"),
+        math_subscript(math_symbol("epsilon"), math_number("0")),
+        math_subscript(math_text("r"), row_of(r12_k, 2))
+    };
+    MathNode *rep = math_fraction(e_sq_2, row_of(rep_den_k, 4));
+
+    MathNode *parts[] = {
+        math_hat(math_text("H")), math_text(" = -"),
+        kin_factor, grad1_sq,
+        math_text(" - "),
+        kin_factor, grad2_sq,
+        math_text(" - "), atr1,
+        math_text(" - ... + "), rep
+    };
+    return row_of(parts, 11);
+}
+
+/* -------------------------------------------------------------------------
+ * NEW (HW 9-14) - Chapter 20: Hydrogen - 1s orbital / radial probability
+ * ------------------------------------------------------------------------- */
+
+/* psi_1s = 1 / sqrt(pi a0^3) * e^(-r/a0) */
 static MathNode *eq_1s_orbital(void)
 {
     MathNode *a0_cubed = math_superscript(
@@ -759,6 +750,8 @@ static MathNode *eq_1s_orbital(void)
     MathNode *pi_a0_k[] = { math_symbol("pi"), a0_cubed };
     MathNode *root = math_sqrt(row_of(pi_a0_k, 2));
     MathNode *prefactor = math_fraction(math_number("1"), root);
+
+    /* e^(-r/a0) */
     MathNode *exp_arg_k[] = {
         math_text("-"),
         math_fraction(math_text("r"),
@@ -766,6 +759,7 @@ static MathNode *eq_1s_orbital(void)
     };
     MathNode *exp_part = math_superscript(math_text("e"),
                                           row_of(exp_arg_k, 2));
+
     MathNode *parts[] = {
         math_subscript(math_symbol("psi"), math_text("1s")),
         math_text(" = "),
@@ -776,9 +770,10 @@ static MathNode *eq_1s_orbital(void)
     return row_of(parts, 5);
 }
 
-/* P_1s(r) = 4 r^2 / a0^3 * e^(-2r/a0) */
+/* Radial probability:  P_1s(r) = 4 r^2 / a0^3 * e^(-2r/a0)  (proportional form) */
 static MathNode *eq_radial_probability(void)
 {
+    /* 4 r^2 / a0^3 */
     MathNode *a0_cubed = math_superscript(
         math_subscript(math_text("a"), math_number("0")),
         math_number("3"));
@@ -787,6 +782,8 @@ static MathNode *eq_radial_probability(void)
         math_superscript(math_text("r"), math_number("2"))
     };
     MathNode *prefactor = math_fraction(row_of(num_k, 2), a0_cubed);
+
+    /* e^(-2r/a0) */
     MathNode *exp_arg_k[] = {
         math_text("-"),
         math_fraction(
@@ -795,6 +792,7 @@ static MathNode *eq_radial_probability(void)
     };
     MathNode *exp_part = math_superscript(math_text("e"),
                                           row_of(exp_arg_k, 2));
+
     MathNode *parts[] = {
         math_subscript(math_text("P"), math_text("1s")),
         math_text("(r) = "),
@@ -805,9 +803,10 @@ static MathNode *eq_radial_probability(void)
     return row_of(parts, 5);
 }
 
-/* d/dr P_1s(r) = 0  =>  r_mp = a0 */
+/* Most probable radius condition:  d/dr P_1s(r) = 0  =>  r_mp = a0 */
 static MathNode *eq_most_probable_radius(void)
 {
+    /* d/dr ( P_1s(r) ) = 0  =>  r = a0 */
     MathNode *ddr = math_fraction(math_text("d"),
                                   math_text("dr"));
     MathNode *P_of_r_k[] = {
@@ -825,158 +824,20 @@ static MathNode *eq_most_probable_radius(void)
     return row_of(parts, 5);
 }
 
-/* d/dr (P_1s(r) dr) = 0  (optimization condition) */
-static MathNode *eq_most_prob_condition(void)
-{
-    MathNode *ddr = math_fraction(math_text("d"), math_text("dr"));
-    MathNode *P_dr_k[] = {
-        math_subscript(math_text("P"), math_text("1s")),
-        math_text("(r) dr")
-    };
-    MathNode *parts[] = {
-        ddr,
-        math_paren(row_of(P_dr_k, 2)),
-        math_text(" = 0")
-    };
-    return row_of(parts, 3);
-}
+/* -------------------------------------------------------------------------
+ * NEW (HW 9-14) - Chapter 21: Slater Determinant (N-electron antisymm WF)
+ * ------------------------------------------------------------------------- */
 
-/* P_1s(r) dr = psi_1s* psi_1s r^2 dr  (definitional form) */
-static MathNode *eq_radial_prob_def(void)
-{
-    MathNode *psi_star = math_superscript(
-        math_subscript(math_symbol("psi"), math_text("1s")),
-        math_text("*"));
-    MathNode *psi  = math_subscript(math_symbol("psi"), math_text("1s"));
-    MathNode *r2   = math_superscript(math_text("r"), math_number("2"));
-    MathNode *lhs_k[] = {
-        math_subscript(math_text("P"), math_text("1s")),
-        math_text("(r) dr = ")
-    };
-    MathNode *rhs_k[] = { psi_star, psi, r2, math_text(" dr") };
-    MathNode *parts[] = {
-        row_of(lhs_k, 2),
-        row_of(rhs_k, 4)
-    };
-    return row_of(parts, 2);
-}
-
-/* ==========================================================================
- * TOPIC 5: Many-Electron Atoms
- * ========================================================================== */
-
-/* Psi(r1,r2,...,rn) = psi1(r1) psi2(r2) ... psin(rn) */
-static MathNode *eq_separable_wavefunction(void)
-{
-    MathNode *lhs_args_k[] = {
-        math_subscript(math_text("r"), math_number("1")),
-        math_text(", "),
-        math_subscript(math_text("r"), math_number("2")),
-        math_text(", ... , "),
-        math_subscript(math_text("r"), math_text("n"))
-    };
-    MathNode *lhs_k[] = {
-        math_symbol("Psi"),
-        math_paren(row_of(lhs_args_k, 5))
-    };
-    MathNode *lhs = row_of(lhs_k, 2);
-
-    MathNode *p1_k[] = {
-        math_subscript(math_symbol("psi"), math_number("1")),
-        math_paren(math_subscript(math_text("r"), math_number("1")))
-    };
-    MathNode *p2_k[] = {
-        math_subscript(math_symbol("psi"), math_number("2")),
-        math_paren(math_subscript(math_text("r"), math_number("2")))
-    };
-    MathNode *pn_k[] = {
-        math_subscript(math_symbol("psi"), math_text("n")),
-        math_paren(math_subscript(math_text("r"), math_text("n")))
-    };
-    MathNode *parts[] = {
-        lhs, math_text(" = "),
-        row_of(p1_k, 2),
-        row_of(p2_k, 2),
-        math_text(" ... "),
-        row_of(pn_k, 2)
-    };
-    return row_of(parts, 6);
-}
-
-/* H_n = -(hbar^2/2m) nabla_n^2 + V_eff,n(r_n)  (effective 1e Hamiltonian) */
-static MathNode *eq_effective_hamiltonian(void)
-{
-    MathNode *hb2 = math_superscript(math_bar(math_text("h")),
-                                     math_number("2"));
-    MathNode *den_k[] = { math_number("2"), math_text("m") };
-    MathNode *grad_n_sq = math_superscript(
-        math_subscript(math_symbol("nabla"), math_text("n")),
-        math_number("2"));
-    MathNode *V_eff_args_k[] = { math_text("eff, n") };
-    MathNode *V_eff = math_subscript(math_text("V"), row_of(V_eff_args_k, 1));
-    MathNode *parts[] = {
-        math_subscript(math_hat(math_text("H")), math_text("n")),
-        math_text(" = -"),
-        math_fraction(hb2, row_of(den_k, 2)),
-        grad_n_sq,
-        math_text(" + "),
-        V_eff,
-        math_paren(math_subscript(math_text("r"), math_text("n")))
-    };
-    return row_of(parts, 7);
-}
-
-/* He Hamiltonian */
-static MathNode *eq_helium_hamiltonian(void)
-{
-    MathNode *hb2 = math_superscript(math_bar(math_text("h")),
-                                     math_number("2"));
-    MathNode *den_2m_k[] = {
-        math_number("2"),
-        math_subscript(math_text("m"), math_text("e"))
-    };
-    MathNode *kin_factor = math_fraction(hb2, row_of(den_2m_k, 2));
-    MathNode *grad1_sq = math_superscript(
-        math_subscript(math_symbol("nabla"), math_number("1")),
-        math_number("2"));
-    MathNode *grad2_sq = math_superscript(
-        math_subscript(math_symbol("nabla"), math_number("2")),
-        math_number("2"));
-    MathNode *e_sq = math_superscript(math_text("e"), math_number("2"));
-    MathNode *atr_num_k[] = { math_number("2"), e_sq };
-    MathNode *atr_den1_k[] = {
-        math_number("4"), math_symbol("pi"),
-        math_subscript(math_symbol("epsilon"), math_number("0")),
-        math_subscript(math_text("r"), math_number("1"))
-    };
-    MathNode *atr1 = math_fraction(row_of(atr_num_k, 2),
-                                   row_of(atr_den1_k, 4));
-    MathNode *e_sq_2 = math_superscript(math_text("e"), math_number("2"));
-    MathNode *r12_k[] = { math_number("1"), math_number("2") };
-    MathNode *rep_den_k[] = {
-        math_number("4"), math_symbol("pi"),
-        math_subscript(math_symbol("epsilon"), math_number("0")),
-        math_subscript(math_text("r"), row_of(r12_k, 2))
-    };
-    MathNode *rep = math_fraction(e_sq_2, row_of(rep_den_k, 4));
-    MathNode *parts[] = {
-        math_hat(math_text("H")), math_text(" = -"),
-        kin_factor, grad1_sq,
-        math_text(" - "),
-        kin_factor, grad2_sq,
-        math_text(" - "), atr1,
-        math_text(" - ... + "), rep
-    };
-    return row_of(parts, 11);
-}
-
-/* Psi(1..N) = 1/sqrt(N!) det|...|  (Slater determinant) */
+/* Psi(1,2,...,N) = 1/sqrt(N!) det|...|  -- displayed in condensed form */
 static MathNode *eq_slater_determinant(void)
 {
+    /* 1 / sqrt(N!) */
     MathNode *N_fact_k[] = { math_text("N"), math_text("!") };
     MathNode *prefactor = math_fraction(
         math_number("1"),
         math_sqrt(row_of(N_fact_k, 2)));
+
+    /* det|chi_1(1)  chi_2(1) ... chi_N(1) ; ... ; chi_1(N) ... chi_N(N)| */
     MathNode *det_inner_k[] = {
         math_subscript(math_symbol("chi"), math_number("1")),
         math_paren(math_number("1")),
@@ -989,6 +850,8 @@ static MathNode *eq_slater_determinant(void)
         row_of(det_inner_k, 5),
         math_text("|")
     };
+
+    /* Psi(1, 2, ..., N) */
     MathNode *lhs_args_k[] = {
         math_number("1"), math_text(", "),
         math_number("2"), math_text(", ... , "),
@@ -998,6 +861,7 @@ static MathNode *eq_slater_determinant(void)
         math_symbol("Psi"),
         math_paren(row_of(lhs_args_k, 5))
     };
+
     MathNode *parts[] = {
         row_of(lhs_k, 2),
         math_text(" = "),
@@ -1008,9 +872,14 @@ static MathNode *eq_slater_determinant(void)
     return row_of(parts, 5);
 }
 
-/* Molecular Hamiltonian (condensed, 4 terms) */
+/* -------------------------------------------------------------------------
+ * NEW (HW 9-14) - Chapter 23: Molecular Orbitals (LCAO-MO)
+ * ------------------------------------------------------------------------- */
+
+/* Multi-electron / multi-nuclei Hamiltonian (condensed, 4 terms) */
 static MathNode *eq_molecular_hamiltonian(void)
 {
+    /* -hbar^2/(2 m_e) Sum(nabla_i^2) */
     MathNode *hb2 = math_superscript(math_bar(math_text("h")),
                                      math_number("2"));
     MathNode *den_2m_k[] = {
@@ -1022,6 +891,8 @@ static MathNode *eq_molecular_hamiltonian(void)
         math_subscript(math_symbol("nabla"), math_text("i")),
         math_number("2"));
     MathNode *sum_kin = math_summation(math_text("i"), NULL, grad_i_sq);
+
+    /* - Sum_{i,A} Z_A e^2 / (4 pi eps0 r_iA) */
     MathNode *e_sq_a = math_superscript(math_text("e"), math_number("2"));
     MathNode *attr_num_k[] = {
         math_subscript(math_text("Z"), math_text("A")),
@@ -1035,6 +906,8 @@ static MathNode *eq_molecular_hamiltonian(void)
     MathNode *attr_term = math_fraction(row_of(attr_num_k, 2),
                                         row_of(attr_den_k, 4));
     MathNode *sum_attr = math_summation(math_text("i,A"), NULL, attr_term);
+
+    /* + Sum_{i<j} e^2 / (4 pi eps0 r_ij) */
     MathNode *e_sq_b = math_superscript(math_text("e"), math_number("2"));
     MathNode *rep_den_k[] = {
         math_number("4"), math_symbol("pi"),
@@ -1043,6 +916,8 @@ static MathNode *eq_molecular_hamiltonian(void)
     };
     MathNode *rep_term = math_fraction(e_sq_b, row_of(rep_den_k, 4));
     MathNode *sum_rep = math_summation(math_text("i<j"), NULL, rep_term);
+
+    /* + Z_A Z_B e^2 / (4 pi eps0 R_AB) */
     MathNode *e_sq_c = math_superscript(math_text("e"), math_number("2"));
     MathNode *nn_num_k[] = {
         math_subscript(math_text("Z"), math_text("A")),
@@ -1056,6 +931,7 @@ static MathNode *eq_molecular_hamiltonian(void)
     };
     MathNode *nn_term = math_fraction(row_of(nn_num_k, 3),
                                       row_of(nn_den_k, 4));
+
     MathNode *parts[] = {
         math_hat(math_text("H")), math_text(" = -"),
         kin_factor, sum_kin,
@@ -1066,7 +942,7 @@ static MathNode *eq_molecular_hamiltonian(void)
     return row_of(parts, 10);
 }
 
-/* S_12 = <phi_1s(1)|phi_1s(2)> */
+/* Overlap integral: S_12 = <phi_1s(1) | phi_1s(2)> */
 static MathNode *eq_overlap_integral(void)
 {
     MathNode *phi_1 = row_of((MathNode*[]){
@@ -1077,6 +953,7 @@ static MathNode *eq_overlap_integral(void)
         math_subscript(math_symbol("phi"), math_text("1s")),
         math_paren(math_number("2"))
     }, 2);
+
     MathNode *S12_k[] = { math_number("1"), math_number("2") };
     MathNode *parts[] = {
         math_subscript(math_text("S"), row_of(S12_k, 2)),
@@ -1086,7 +963,7 @@ static MathNode *eq_overlap_integral(void)
     return row_of(parts, 3);
 }
 
-/* c_g = 1 / sqrt(2 (1 + S_12)) */
+/* c_g = 1 / sqrt(2 (1 + S_12))   (bonding / gerade coefficient) */
 static MathNode *eq_cg_coefficient(void)
 {
     MathNode *S12_k[] = { math_number("1"), math_number("2") };
@@ -1107,7 +984,7 @@ static MathNode *eq_cg_coefficient(void)
     return row_of(parts, 3);
 }
 
-/* c_u = 1 / sqrt(2 (1 - S_12)) */
+/* c_u = 1 / sqrt(2 (1 - S_12))  (antibonding / ungerade coefficient) */
 static MathNode *eq_cu_coefficient(void)
 {
     MathNode *S12_k[] = { math_number("1"), math_number("2") };
@@ -1127,6 +1004,10 @@ static MathNode *eq_cu_coefficient(void)
     };
     return row_of(parts, 3);
 }
+
+/* -------------------------------------------------------------------------
+ * NEW (HW 9-14) - Chapter 24: sp Hybrid Orbitals
+ * ------------------------------------------------------------------------- */
 
 /* psi_sp,1 = c1 phi_2s + c2 phi_2px */
 static MathNode *eq_sp_hybrid_def(void)
@@ -1150,7 +1031,7 @@ static MathNode *eq_sp_hybrid_def(void)
     return row_of(parts, 5);
 }
 
-/* c1^2 + c2^2 = 1 */
+/* Normalization:  c1^2 + c2^2 = 1 */
 static MathNode *eq_sp_normalization(void)
 {
     MathNode *c1_sq = math_superscript(
@@ -1166,7 +1047,7 @@ static MathNode *eq_sp_normalization(void)
     return row_of(parts, 4);
 }
 
-/* c1 c5 + c2 c6 = 0 */
+/* Orthogonality:  c1 c5 + c2 c6 = 0 */
 static MathNode *eq_sp_orthogonality(void)
 {
     MathNode *c1c5_k[] = {
@@ -1186,7 +1067,7 @@ static MathNode *eq_sp_orthogonality(void)
     return row_of(parts, 4);
 }
 
-/* c1^2 + c5^2 = 1 */
+/* Equal contribution rule:  c1^2 + c5^2 = 1   (and  c2^2 + c6^2 = 1) */
 static MathNode *eq_sp_equal_contribution(void)
 {
     MathNode *c1_sq = math_superscript(
@@ -1202,17 +1083,198 @@ static MathNode *eq_sp_equal_contribution(void)
     return row_of(parts, 4);
 }
 
-/* Slater determinant for Beryllium (N=4) */
+/* -------------------------------------------------------------------------
+ * NEW (HW 9-14) - Boltzmann population ratio
+ * ------------------------------------------------------------------------- */
+
+/* p_LUMO / p_HOMO = e^(-Delta E / kT) */
+static MathNode *eq_boltzmann_ratio(void)
+{
+    /* Exponent: -Delta E / kT */
+    MathNode *DeltaE_k[] = { math_symbol("Delta"), math_text("E") };
+    MathNode *exp_num_k[] = {
+        math_text("-"), row_of(DeltaE_k, 2)
+    };
+    MathNode *exp_frac = math_fraction(row_of(exp_num_k, 2),
+                                       math_text("kT"));
+
+    MathNode *ratio = math_fraction(
+        math_subscript(math_text("p"), math_text("LUMO")),
+        math_subscript(math_text("p"), math_text("HOMO")));
+
+    MathNode *parts[] = {
+        ratio, math_text(" = "),
+        math_superscript(math_text("e"), exp_frac)
+    };
+    return row_of(parts, 3);
+}
+
+/* =========================================================================
+ * NEW (Step 2) - Additional physics/chemistry equation builders
+ * =========================================================================
+ * Grouped below by destination topic for readability.  They are added to
+ * their respective eqs_*[] arrays in §3.
+ * ========================================================================= */
+
+/* --- Topic 0 (PIB) --- */
+
+/* De Broglie Kinetic Energy:  E_kin = h^2 / (2 m lambda^2)
+ * Derived by substituting p = h/lambda into E_kin = p^2 / (2m). */
+static MathNode *eq_debroglie_ke(void)
+{
+    MathNode *h2  = math_superscript(math_text("h"), math_number("2"));
+    MathNode *lam2 = math_superscript(math_symbol("lambda"), math_number("2"));
+    MathNode *den_k[] = { math_number("2"), math_text("m"), lam2 };
+    MathNode *parts[] = {
+        math_subscript(math_text("E"), math_text("kin")),
+        math_text(" = "),
+        math_fraction(h2, row_of(den_k, 3))
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 2 (Harmonic Oscillator & Rotor) --- */
+
+/* Classical Kinetic Energy:  E_kin = (1/2) m v^2 */
+static MathNode *eq_classical_ke(void)
+{
+    MathNode *half = math_fraction(math_number("1"), math_number("2"));
+    MathNode *v2   = math_superscript(math_text("v"), math_number("2"));
+    MathNode *parts[] = {
+        math_subscript(math_text("E"), math_text("kin")),
+        math_text(" = "),
+        half,
+        math_text("m"),
+        v2
+    };
+    return row_of(parts, 5);
+}
+
+/* Classical HO Position:  x(t) = x_0 cos(omega t) */
+static MathNode *eq_ho_position(void)
+{
+    MathNode *arg_k[] = { math_symbol("omega"), math_text("t") };
+    MathNode *parts[] = {
+        math_text("x(t) = "),
+        math_subscript(math_text("x"), math_number("0")),
+        math_text(" cos"),
+        math_paren(row_of(arg_k, 2))
+    };
+    return row_of(parts, 4);
+}
+
+/* Classical HO Force:  F(t) = -k x(t) = mu * d^2x/dt^2 */
+static MathNode *eq_ho_force(void)
+{
+    /* Render the second derivative as the fraction d^2 x / d t^2 */
+    MathNode *d2x_k[] = {
+        math_superscript(math_text("d"), math_number("2")),
+        math_text("x")
+    };
+    MathNode *dt2_k[] = {
+        math_text("d"),
+        math_superscript(math_text("t"), math_number("2"))
+    };
+    MathNode *deriv = math_fraction(row_of(d2x_k, 2), row_of(dt2_k, 2));
+    MathNode *parts[] = {
+        math_text("F = -kx = "),
+        math_symbol("mu"),
+        deriv
+    };
+    return row_of(parts, 3);
+}
+
+/* Angular Frequency:  omega = sqrt(k / mu) */
+static MathNode *eq_angular_frequency(void)
+{
+    MathNode *parts[] = {
+        math_symbol("omega"),
+        math_text(" = "),
+        math_sqrt(math_fraction(math_text("k"), math_symbol("mu")))
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 3 (Diatomic Spectroscopy) --- */
+
+/* Wavenumber compact form:  nu_tilde = lambda^(-1) */
+static MathNode *eq_wavenumber_inv(void)
+{
+    MathNode *parts[] = {
+        math_bar(math_symbol("nu")),
+        math_text(" = "),
+        math_superscript(math_symbol("lambda"), math_text("-1"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Frequency-Wavelength Relation:  nu = c / lambda */
+static MathNode *eq_freq_wavelength(void)
+{
+    MathNode *parts[] = {
+        math_symbol("nu"),
+        math_text(" = "),
+        math_fraction(math_text("c"), math_symbol("lambda"))
+    };
+    return row_of(parts, 3);
+}
+
+/* Bond Force Constant:  k = 4 pi^2 nu^2 mu */
+static MathNode *eq_bond_force_constant(void)
+{
+    MathNode *pi2 = math_superscript(math_symbol("pi"), math_number("2"));
+    MathNode *nu2 = math_superscript(math_symbol("nu"), math_number("2"));
+    MathNode *parts[] = {
+        math_text("k = "),
+        math_number("4"),
+        pi2,
+        nu2,
+        math_symbol("mu")
+    };
+    return row_of(parts, 5);
+}
+
+/* --- Topic 4 (Hydrogen Atom) — Step 2.5 additions --- */
+
+/* Most Probable Radius — optimization condition:  d/dr [ P_1s(r) dr ] = 0
+ * Shows the exact differential condition used to find r_mp = a0.
+ * The existing eq_most_probable_radius() also displays the solved result. */
+static MathNode *eq_most_prob_condition(void)
+{
+    /* d/dr as a fraction */
+    MathNode *ddr = math_fraction(math_text("d"), math_text("dr"));
+    /* Inner: P_1s(r) dr */
+    MathNode *P_dr_k[] = {
+        math_subscript(math_text("P"), math_text("1s")),
+        math_text("(r) dr")
+    };
+    MathNode *parts[] = {
+        ddr,
+        math_paren(row_of(P_dr_k, 2)),
+        math_text(" = 0")
+    };
+    return row_of(parts, 3);
+}
+
+/* --- Topic 5 (Many-Electron Atoms) — Step 2.5 additions --- */
+
+/* Slater Determinant for Beryllium (N = 4):
+ * Psi = 1/sqrt(4!) det| 1s_a  1s_b  2s_a  2s_b |
+ * The general N-electron form is eq_slater_determinant(). */
 static MathNode *eq_slater_be(void)
 {
+    /* Normalisation prefactor: 1 / sqrt(4!) */
     MathNode *fact4_k[] = { math_number("4"), math_text("!") };
     MathNode *prefactor = math_fraction(
         math_number("1"),
         math_sqrt(row_of(fact4_k, 2)));
+
+    /* Spin-orbital column labels (ASCII surrogate: alpha->a, beta->b) */
     MathNode *col1 = math_subscript(math_text("1s"), math_symbol("alpha"));
     MathNode *col2 = math_subscript(math_text("1s"), math_symbol("beta"));
     MathNode *col3 = math_subscript(math_text("2s"), math_symbol("alpha"));
     MathNode *col4 = math_subscript(math_text("2s"), math_symbol("beta"));
+
     MathNode *det_k[] = {
         math_text("det|"),
         col1, math_text(" "),
@@ -1228,9 +1290,54 @@ static MathNode *eq_slater_be(void)
     return row_of(parts, 4);
 }
 
-/* S_12 = <phi_1s(1)|phi_1s(2)> = <phi_1s(2)|phi_1s(1)>  (exchange symmetry) */
+/* phi_1s(i) = (1/sqrt(pi)) (Z/a0)^(3/2) e^(-Z r_i / a0) */
+static MathNode *eq_phi1s_Z(void)
+{
+    MathNode *a0     = math_subscript(math_text("a"), math_number("0"));
+    MathNode *prefac = math_fraction(math_number("1"), math_sqrt(math_symbol("pi")));
+    MathNode *Za0    = math_fraction(math_text("Z"), a0);
+    MathNode *Za0_32 = math_superscript(
+        math_paren(Za0),
+        math_fraction(math_number("3"), math_number("2")));
+    MathNode *a0_2   = math_subscript(math_text("a"), math_number("0"));
+    MathNode *exp_num_k[] = {
+        math_text("-Z"),
+        math_subscript(math_text("r"), math_text("i"))
+    };
+    MathNode *exp_arg = math_fraction(row_of(exp_num_k, 2), a0_2);
+    MathNode *exp_p   = math_superscript(math_text("e"), exp_arg);
+    MathNode *bra_k[] = {
+        math_subscript(math_symbol("phi"), math_text("1s")),
+        math_paren(math_text("i"))
+    };
+    MathNode *parts[] = {
+        row_of(bra_k, 2),
+        math_text(" = "),
+        prefac,
+        Za0_32,
+        exp_p
+    };
+    return row_of(parts, 5);
+}
+
+/* r_1 - r_2 = R  (electron separation vector) */
+static MathNode *eq_electron_separation(void)
+{
+    MathNode *parts[] = {
+        math_subscript(math_text("r"), math_number("1")),
+        math_text(" - "),
+        math_subscript(math_text("r"), math_number("2")),
+        math_text(" = R")
+    };
+    return row_of(parts, 4);
+}
+
+/* Overlap Integral — symmetric form:
+ * S_12 = <phi_1s(1)|phi_1s(2)> = <phi_1s(2)|phi_1s(1)>
+ * Demonstrates the exchange-symmetry property not shown in eq_overlap_integral(). */
 static MathNode *eq_overlap_symmetric(void)
 {
+    /* <phi_1s(1)|phi_1s(2)> */
     MathNode *phi1 = row_of((MathNode*[]){
         math_subscript(math_symbol("phi"), math_text("1s")),
         math_paren(math_number("1"))
@@ -1239,6 +1346,7 @@ static MathNode *eq_overlap_symmetric(void)
         math_subscript(math_symbol("phi"), math_text("1s")),
         math_paren(math_number("2"))
     }, 2);
+    /* <phi_1s(2)|phi_1s(1)> (swapped) */
     MathNode *phi2b = row_of((MathNode*[]){
         math_subscript(math_symbol("phi"), math_text("1s")),
         math_paren(math_number("2"))
@@ -1247,6 +1355,7 @@ static MathNode *eq_overlap_symmetric(void)
         math_subscript(math_symbol("phi"), math_text("1s")),
         math_paren(math_number("1"))
     }, 2);
+
     MathNode *S12_k[] = { math_number("1"), math_number("2") };
     MathNode *parts[] = {
         math_subscript(math_text("S"), row_of(S12_k, 2)),
@@ -1258,15 +1367,22 @@ static MathNode *eq_overlap_symmetric(void)
     return row_of(parts, 5);
 }
 
-/* <psi|psi> = 1 ; <psi_1|psi_2> = 0  (hybrid orbital constraints) */
+/* Hybrid Orbital Constraints — general Dirac bracket form:
+ * <psi|psi> = 1    (normalisation)
+ * <psi_1|psi_2> = 0  (orthogonality)
+ * The sp-specific evaluated forms are eq_sp_normalization() / eq_sp_orthogonality(). */
 static MathNode *eq_hybrid_constraints(void)
 {
+    /* Normalisation: <psi|psi> = 1 */
     MathNode *norm_bk = math_braket(math_symbol("psi"), math_symbol("psi"));
     MathNode *norm_k[] = { norm_bk, math_text(" = 1") };
+
+    /* Orthogonality: <psi_1|psi_2> = 0 */
     MathNode *orth_bk = math_braket(
         math_subscript(math_symbol("psi"), math_number("1")),
         math_subscript(math_symbol("psi"), math_number("2")));
     MathNode *orth_k[] = { orth_bk, math_text(" = 0") };
+
     MathNode *parts[] = {
         row_of(norm_k, 2),
         math_text(" ; "),
@@ -1275,147 +1391,44 @@ static MathNode *eq_hybrid_constraints(void)
     return row_of(parts, 3);
 }
 
-/* ==========================================================================
- * TOPIC 5 (continued): new Many-Electron / LCAO builders
- * ========================================================================== */
+/* --- Topic 4 (Hydrogen Atom) --- */
 
-/* phi_1s(1) = (1/sqrt(pi)) (Z/a_0)^(3/2) exp(-Z r_1 / a_0)
- * Explicit hydrogen-like 1s wavefunction used in LCAO overlap integrals. */
-static MathNode *eq_phi_1s_explicit(void)
+/* Radial Probability Distribution (definitional form):
+ * P_1s(r) dr = psi_1s* psi_1s r^2 dr
+ * This shows the origin from |psi|^2 dV with spherical Jacobian r^2.
+ * The evaluated form (4r^2/a0^3 * e^(-2r/a0)) is eq_radial_probability(). */
+static MathNode *eq_radial_prob_def(void)
 {
-    /* Prefactor: 1 / sqrt(pi) */
-    MathNode *prefactor = math_fraction(
-        math_number("1"),
-        math_sqrt(math_symbol("pi")));
-
-    /* (Z / a_0)^(3/2) */
-    MathNode *Za0 = math_fraction(
-        math_text("Z"),
-        math_subscript(math_text("a"), math_number("0")));
-    MathNode *Za0_pow = math_superscript(
-        math_paren(Za0),
-        math_fraction(math_number("3"), math_number("2")));
-
-    /* exp(-Z r_1 / a_0) */
-    MathNode *exp_num_k[] = {
-        math_text("-Z"),
-        math_subscript(math_text("r"), math_number("1"))
-    };
-    MathNode *exp_arg = math_fraction(
-        row_of(exp_num_k, 2),
-        math_subscript(math_text("a"), math_number("0")));
-    MathNode *exp_part = math_superscript(math_text("e"), exp_arg);
-
-    /* phi_1s(1) = ... */
+    MathNode *psi_star = math_superscript(
+        math_subscript(math_symbol("psi"), math_text("1s")),
+        math_text("*"));
+    MathNode *psi  = math_subscript(math_symbol("psi"), math_text("1s"));
+    MathNode *r2   = math_superscript(math_text("r"), math_number("2"));
     MathNode *lhs_k[] = {
-        math_subscript(math_symbol("phi"), math_text("1s")),
-        math_paren(math_number("1"))
+        math_subscript(math_text("P"), math_text("1s")),
+        math_text("(r) dr = ")
     };
+    MathNode *rhs_k[] = { psi_star, psi, r2, math_text(" dr") };
     MathNode *parts[] = {
-        row_of(lhs_k, 2), math_text(" = "),
-        prefactor, Za0_pow, exp_part
+        row_of(lhs_k, 2),
+        row_of(rhs_k, 4)
     };
-    return row_of(parts, 5);
+    return row_of(parts, 2);
 }
 
-/* r_1 - r_2 = R  (inter-electron / inter-nuclear displacement) */
-static MathNode *eq_r1_r2_R(void)
-{
-    MathNode *parts[] = {
-        math_subscript(math_text("r"), math_number("1")),
-        math_text(" - "),
-        math_subscript(math_text("r"), math_number("2")),
-        math_text(" = R")
-    };
-    return row_of(parts, 4);
-}
+/* -------------------------------------------------------------------------
+ * NEW (v4) - TOPIC 6: Statistical Mechanics (Lecture 13)
+ * -------------------------------------------------------------------------
+ * Permutations / combinations, microstate weights, Boltzmann distribution,
+ * partition function, beta = 1/(kT), R = k Na, expectation value.
+ * ------------------------------------------------------------------------- */
 
-/* Slater determinant (Be, N=4): explicit electron label form.
- * Row 1 shows the spin-orbital column headers evaluated for electron 1.
- * Rows 2-4 carry the same columns for electrons 2, 3, 4. */
-static MathNode *eq_slater_matrix(void)
-{
-    /* 1 / sqrt(4!) */
-    MathNode *fact_k[] = { math_number("4"), math_text("!") };
-    MathNode *pref = math_fraction(
-        math_number("1"),
-        math_sqrt(row_of(fact_k, 2)));
-
-    /* Row 1: column headers evaluated for electron 1 */
-    MathNode *c1 = row_of((MathNode*[]){
-        math_subscript(math_text("1s"), math_symbol("alpha")),
-        math_paren(math_number("1"))
-    }, 2);
-    MathNode *c2 = row_of((MathNode*[]){
-        math_subscript(math_text("1s"), math_symbol("beta")),
-        math_paren(math_number("1"))
-    }, 2);
-    MathNode *c3 = row_of((MathNode*[]){
-        math_subscript(math_text("2s"), math_symbol("alpha")),
-        math_paren(math_number("1"))
-    }, 2);
-    MathNode *c4 = row_of((MathNode*[]){
-        math_subscript(math_text("2s"), math_symbol("beta")),
-        math_paren(math_number("1"))
-    }, 2);
-
-    /* det|row1 ; e=2 ... ; e=3 ... ; e=4 ...| */
-    MathNode *row1_k[] = {
-        math_text("det|"), c1, math_text(" "), c2,
-        math_text(" "), c3, math_text(" "), c4, math_text("|")
-    };
-    MathNode *label_k[] = {
-        math_text("[e = 1..4]")
-    };
-    MathNode *parts[] = {
-        math_symbol("Psi"), math_text(" = "),
-        pref, math_text(" "),
-        row_of(row1_k, 9),
-        math_text(" "),
-        row_of(label_k, 1)
-    };
-    return row_of(parts, 7);
-}
-
-/* Boltzmann population ratio with rotational energy:
- * P_1 / P_2 = exp(-Delta E / kT) = exp(-E_J / kT) */
-static MathNode *eq_boltzmann_pop_ratio(void)
-{
-    MathNode *ratio = math_fraction(
-        math_subscript(math_text("P"), math_number("1")),
-        math_subscript(math_text("P"), math_number("2")));
-
-    /* First exponential: exp(-DeltaE / kT) */
-    MathNode *DE_k[] = { math_symbol("Delta"), math_text("E") };
-    MathNode *neg_DE_k[] = { math_text("-"), row_of(DE_k, 2) };
-    MathNode *exp1 = math_superscript(
-        math_text("e"),
-        math_fraction(row_of(neg_DE_k, 2), math_text("kT")));
-
-    /* Second exponential: exp(-E_J / kT) */
-    MathNode *neg_EJ_k[] = {
-        math_text("-"),
-        math_subscript(math_text("E"), math_text("J"))
-    };
-    MathNode *exp2 = math_superscript(
-        math_text("e"),
-        math_fraction(row_of(neg_EJ_k, 2), math_text("kT")));
-
-    MathNode *parts[] = {
-        ratio, math_text(" = "), exp1, math_text(" = "), exp2
-    };
-    return row_of(parts, 5);
-}
-
-/* ==========================================================================
- * TOPIC 6: Statistical Mechanics
- * ========================================================================== */
-
-/* P_i = W_i / sum_j W_j */
+/* Probability of microstate:  P_i = W_i / sum_j W_j */
 static MathNode *eq_microstate_probability(void)
 {
     MathNode *sum_body = math_subscript(math_text("W"), math_text("j"));
     MathNode *sum = math_summation(math_text("j"), NULL, sum_body);
+
     MathNode *parts[] = {
         math_subscript(math_text("P"), math_text("i")),
         math_text(" = "),
@@ -1426,7 +1439,7 @@ static MathNode *eq_microstate_probability(void)
     return row_of(parts, 3);
 }
 
-/* R = k N_A  =>  k = R / N_A */
+/* Boltzmann constant:  R = k Na  =>  k = R / Na */
 static MathNode *eq_boltzmann_constant(void)
 {
     MathNode *parts[] = {
@@ -1439,7 +1452,7 @@ static MathNode *eq_boltzmann_constant(void)
     return row_of(parts, 4);
 }
 
-/* <x> = sum_i p_i x_i */
+/* Expectation value:  <x> = sum_i p_i x_i */
 static MathNode *eq_expectation_value(void)
 {
     MathNode *body_k[] = {
@@ -1453,7 +1466,7 @@ static MathNode *eq_expectation_value(void)
     return row_of(parts, 2);
 }
 
-/* p_1 = (e^(DeltaE/kT) + 1)^(-1)  (two-level population) */
+/* 2-level Boltzmann ratio:  p1 = (e^(DeltaE/kT) + 1)^(-1) */
 static MathNode *eq_two_level_population(void)
 {
     MathNode *DeltaE_k[] = {
@@ -1474,160 +1487,6 @@ static MathNode *eq_two_level_population(void)
     return row_of(parts, 3);
 }
 
-}
-
-/* =========================================================================
- * render_equation_wrapped  (declared in topics.h; defined here)
- * =========================================================================
- *
- * Renders a MathNode tree into at most avail_w pixels of horizontal space,
- * wrapping long MATH_ROW trees across multiple lines at whitespace-padded
- * operator tokens (" = ", " + ", " - ").
- *
- * Algorithm
- * ---------
- * 1. Normal layout.  If it fits, draw/measure and return.
- * 2. Non-row tree or no operator split-points: demote to FONT_SMALL,
- *    render in one line (may still overflow at extreme widths).
- * 3. MATH_ROW with operator children: greedy left-to-right packing.
- *    Non-final lines get a trailing "..." marker; non-first lines a
- *    leading "..." marker.  Any chunk still too wide is demoted to
- *    FONT_SMALL before drawing.
- *
- * draw == 0  →  measure-only (no VRAM writes); returns total height.
- *
- * The pool is NOT reset inside this function.  Callers must call
- * render_pool_reset() before each equation when iterating many equations.
- * ========================================================================= */
-
-#define WRAP_LINE_GAP   4     /* vertical gap between wrapped lines (px)   */
-#define WRAP_CONT_W    27     /* approximate pixel width of "..." marker    */
-
-int render_equation_wrapped(MathNode *tree, int x, int y,
-                             int avail_w, int draw)
-{
-    if (!tree) return 0;
-
-    render_layout(tree);
-
-    /* ---- Fast path: fits at FONT_NORMAL ---- */
-    if (tree->layout.w <= avail_w) {
-        if (draw) render_draw(tree, x, y);
-        return tree->layout.h;
-    }
-
-    /* ---- Non-row fallback: demote to FONT_SMALL, single line ---- */
-    if (tree->type != MATH_ROW) {
-        render_force_tier(tree, FONT_SMALL);
-        render_layout(tree);
-        if (draw) render_draw(tree, x, y);
-        return tree->layout.h;
-    }
-
-    /* ---- MATH_ROW: look for operator split-points ---- */
-    int count  = tree->d.row.count;
-    MathNode **ch = tree->d.row.children;
-
-    /* Children widths are valid from render_layout(tree) above */
-
-    /* Locate operator-child indices: tokens of the form " = ", " + ", " - " */
-    int op_idx[32];
-    int nops = 0;
-    for (int i = 0; i < count && nops < 31; i++) {
-        if (!ch[i]) continue;
-        if (ch[i]->type == MATH_TEXT) {
-            const char *t = ch[i]->d.leaf.text;
-            if (t && t[0] == ' ' &&
-                (t[1] == '=' || t[1] == '+' || t[1] == '-')) {
-                op_idx[nops++] = i;
-            }
-        }
-    }
-
-    /* No operator split-points → demote whole row to FONT_SMALL */
-    if (nops == 0) {
-        render_force_tier(tree, FONT_SMALL);
-        render_layout(tree);
-        if (draw) render_draw(tree, x, y);
-        return tree->layout.h;
-    }
-
-    /* ---- Greedy line-packing ---- */
-    int total_h = 0;
-    int cy      = y;
-    int start   = 0;   /* first child index of the current line */
-    int line_no = 0;
-
-    while (start < count) {
-        int is_first = (line_no == 0);
-
-        /* Budget: subtract space for continuation markers */
-        int prefix_w = is_first ? 0 : WRAP_CONT_W;
-        int budget   = avail_w - prefix_w - WRAP_CONT_W;
-
-        /* Greedy walk: accumulate children until budget is exceeded */
-        int last_op_split = -1;   /* best operator-based break point */
-        int running_w     = 0;
-        int fit_end       = start;
-
-        for (int i = start; i < count; i++) {
-            if (!ch[i]) { fit_end = i + 1; continue; }
-            if (running_w + ch[i]->layout.w > budget && fit_end > start)
-                break;
-            running_w += ch[i]->layout.w;
-            fit_end = i + 1;
-
-            /* Record split candidate AFTER this operator */
-            if (ch[i]->type == MATH_TEXT) {
-                const char *t = ch[i]->d.leaf.text;
-                if (t && t[0] == ' ' &&
-                    (t[1] == '=' || t[1] == '+' || t[1] == '-'))
-                    last_op_split = i + 1;
-            }
-        }
-
-        /* Choose where this line ends */
-        int line_end;
-        if (fit_end >= count) {
-            line_end = count;              /* last line: take everything */
-        } else if (last_op_split > start) {
-            line_end = last_op_split;      /* clean break at operator */
-        } else {
-            line_end = (fit_end > start) ? fit_end : start + 1; /* force */
-        }
-
-        int is_last = (line_end >= count);
-
-        /* Assemble this line's child array */
-        MathNode *kids[68];
-        int ki = 0;
-        if (!is_first) kids[ki++] = math_text("...");
-        for (int i = start; i < line_end; i++)
-            if (ch[i]) kids[ki++] = ch[i];
-        if (!is_last)  kids[ki++] = math_text("...");
-
-        if (ki == 0) break;   /* safety valve */
-
-        MathNode *line = (ki == 1) ? kids[0] : math_row(kids, ki);
-        render_layout(line);
-
-        /* Demote this chunk if it's still too wide */
-        if (line->layout.w > avail_w) {
-            render_force_tier(line, FONT_SMALL);
-            render_layout(line);
-        }
-
-        if (draw) render_draw(line, x, cy);
-        cy      += line->layout.h + WRAP_LINE_GAP;
-        total_h += line->layout.h + WRAP_LINE_GAP;
-
-        start = line_end;
-        line_no++;
-        if (line_no > 16) break;   /* circuit-breaker: avoid infinite loop */
-    }
-
-    return total_h > 0 ? total_h : 14;
-}
 
 /* =========================================================================
  * §3  TOPIC CONTENT ARRAYS
@@ -1638,7 +1497,7 @@ int render_equation_wrapped(MathNode *tree, int x, int y,
 static const EquationEntry eqs_pib[] = {
     { "hbar Definition",
       eq_hbar_def,
-      "hbar : reduced Planck's constant\n"
+      "hbar : reduced Planck's constant (h / 2pi)\n"
       "h    : Planck's constant (6.626e-34 J*s)\n"
       "pi   : mathematical constant pi\n"
       "The most fundamental constant in quantum mechanics." },
@@ -1660,11 +1519,11 @@ static const EquationEntry eqs_pib[] = {
       "Levels become further apart as n increases." },
     { "Probability P(n)",
       eq_pib_probability,
-      "P(n) : probability of finding particle between L1 and L2\n"
+      "P(n) : probability of finding particle in region\n"
       "n    : quantum number\n"
       "L    : box length\n"
       "The 2/L prefactor comes from normalization of psi_n.\n"
-      "Integration limits L1, L2 set the region of interest." },
+      "Integration limits set the region of interest." },
     { "Boltzmann Population Ratio",
       eq_boltzmann_ratio,
       "p_LUMO / p_HOMO : thermal-population ratio\n"
@@ -1799,15 +1658,6 @@ static const KeywordEntry kws_commutators[] = {
     { "Uncertainty Principle",
       "Non-commuting observables obey a product lower bound: the more "
       "sharply one is known, the less sharply the other can be." },
-    { "Magnetic Quantum Number (m)",
-      "Quantum number labelling the z-projection of angular momentum: "
-      "m = -l, ..., 0, ..., +l.  Sets the orientation of the orbital." },
-    { "NMR Resonance",
-      "Nuclear Magnetic Resonance: RF photons at frequency nu = gamma "
-      "B_0 / (2 pi) flip nuclear spin between m = +1/2 and -1/2." },
-    { "Gyromagnetic Ratio (gamma)",
-      "Nucleus-specific proportionality between spin angular momentum "
-      "and magnetic moment; determines the NMR frequency." },
 };
 
 /* ---------- TOPIC 2: HARMONIC OSCILLATOR & ROTOR ---------- */
@@ -1825,28 +1675,18 @@ static const EquationEntry eqs_oscillator[] = {
       "hbar  : reduced Planck's constant\n"
       "J     : rotational quantum number (0, 1, 2, ...)\n"
       "I     : moment of inertia" },
-    { "Classical Energy (full)",
-      eq_classical_energy_full,
-      "E     : total kinetic energy\n"
-      "m     : mass\n"
+    { "Classical Kinetic Energy",
+      eq_classical_ke,
+      "E_kin : classical kinetic energy\n"
+      "m     : mass of the particle\n"
       "v     : velocity\n"
-      "p     : momentum (p = mv)\n"
-      "Both forms are equivalent; the p^2/2m form connects\n"
-      "directly to the quantum KE operator -hbar^2/2m * d^2/dx^2." },
-    { "Classical HO Position (alt.)",
-      eq_ho_pos_sqrt,
-      "X(t)  : displacement from equilibrium at time t\n"
-      "x_0   : amplitude (initial stretch at t=0, v=0)\n"
-      "mu    : reduced mass of the two-body system\n"
-      "k     : force constant (bond stiffness)\n"
-      "Equivalent to x_0 cos(omega t) after substituting omega = sqrt(k/mu)." },
-    { "Angular Frequency Relation",
-      eq_omega_sq_relation,
-      "Rearranges F = -kx = m*ddot_x to show ddot_x / x = -k/m = -omega^2.\n"
-      "k     : force constant\n"
-      "m     : mass (or reduced mass mu)\n"
-      "omega : angular frequency = sqrt(k/m)\n"
-      "Confirms motion is simple harmonic with frequency omega." },
+      "Provides the kinetic term foundation for the quantum HO." },
+    { "Classical HO Position",
+      eq_ho_position,
+      "x(t)  : displacement from equilibrium at time t\n"
+      "x_0   : amplitude (maximum displacement)\n"
+      "omega : angular frequency (rad/s)\n"
+      "The classical solution is a pure cosine oscillation." },
     { "Classical HO Force",
       eq_ho_force,
       "F     : restoring force (Hooke's Law: F = -kx)\n"
@@ -1877,12 +1717,9 @@ static const KeywordEntry kws_oscillator[] = {
     { "Zero-Point Vibration",
       "The v=0 state still has energy (1/2) hbar omega; a molecule "
       "never stops vibrating entirely." },
-    { "Reduced Mass (mu)",
-      "Effective single-body mass for a two-body problem: mu = m1 m2 / "
-      "(m1 + m2).  Used in both rotor and oscillator models." },
 };
 
-/* ---------- TOPIC 3: DIATOMIC SPECTROSCOPY ---------- */
+/* ---------- TOPIC 3: DIATOMIC SPECTROSCOPY (LECTURE 8 - FULL) ---------- */
 
 static const char *desc_spectroscopy =
     "Photons have both electric and magnetic field components. "
@@ -1904,22 +1741,6 @@ static const char *desc_spectroscopy =
     "either branch gives the bond length directly.";
 
 static const EquationEntry eqs_spectroscopy[] = {
-    { "Moment of Inertia",
-      eq_moment_of_inertia,
-      "I  : moment of inertia (angular-momentum inertia)\n"
-      "mu : reduced mass\n"
-      "r  : bond length between the two bodies" },
-    { "Rotational Constant (h form)",
-      eq_rotational_constant,
-      "B : rotational constant\n"
-      "h : Planck's constant\n"
-      "I : moment of inertia" },
-    { "Rotational Constant (hbar form)",
-      eq_rot_const_hbar,
-      "B    : rotational constant (same as h/(8pi^2 I))\n"
-      "hbar : reduced Planck's constant\n"
-      "I    : moment of inertia\n"
-      "Useful when working with hbar-based energy expressions." },
     { "Unit Relation v*lambda = c",
       eq_vl_c,
       "v      : wave speed (c in vacuum: 3.0e8 m/s)\n"
@@ -1927,6 +1748,12 @@ static const EquationEntry eqs_spectroscopy[] = {
       "c      : speed of light in vacuum\n"
       "Combines with nu_tilde = 1/lambda to convert between\n"
       "frequency, wavelength, and wavenumber." },
+    { "Rotational Constant (hbar form)",
+      eq_rot_const_hbar,
+      "B    : rotational constant (same as h/(8pi^2 I))\n"
+      "hbar : reduced Planck's constant\n"
+      "I    : moment of inertia\n"
+      "Useful when working with hbar-based energy expressions." },
     { "R-Branch Energy Gap",
       eq_r_branch_energy,
       "Delta E_R : photon energy for R-branch transition (Delta J = +1)\n"
@@ -1958,6 +1785,23 @@ static const EquationEntry eqs_spectroscopy[] = {
       "B    : rotational constant (measured from branch spacing)\n"
       "Derived from B = hbar^2/2I and I = mu*r^2;\n"
       "rearranging gives r = hbar/sqrt(2 mu B)." },
+    { "Rotational Boltzmann Population",
+      eq_boltzmann_rot_pop,
+      "P_1/P_2 : ratio of populations of two rotational levels\n"
+      "Delta E : energy gap (E_J = hbar^2 J(J+1) / 2I)\n"
+      "k       : Boltzmann constant\n"
+      "T       : absolute temperature (K)\n"
+      "At room temperature many J levels are significantly populated." },
+    { "Moment of Inertia",
+      eq_moment_of_inertia,
+      "I  : moment of inertia (angular-momentum inertia)\n"
+      "mu : reduced mass\n"
+      "r  : bond length between the two bodies" },
+    { "Rotational Constant",
+      eq_rotational_constant,
+      "B : rotational constant\n"
+      "h : Planck's constant\n"
+      "I : moment of inertia" },
     { "Wavenumber",
       eq_wavenumber,
       "nu_tilde : wavenumber (cm^-1), common FTIR unit\n"
@@ -1988,15 +1832,6 @@ static const EquationEntry eqs_spectroscopy[] = {
       "mu  : reduced mass of the diatomic pair\n"
       "Derived from omega = sqrt(k/mu) with omega = 2 pi nu;\n"
       "rearranging gives k = 4 pi^2 nu^2 mu." },
-    { "Boltzmann Population Ratio",
-      eq_boltzmann_pop_ratio,
-      "P_1 / P_2 : ratio of populations of two rotational levels\n"
-      "Delta E   : energy gap between the two levels\n"
-      "E_J       : rotational energy hbar^2 J(J+1) / (2I)\n"
-      "k         : Boltzmann constant (1.381e-23 J/K)\n"
-      "T         : absolute temperature (K)\n"
-      "At room temperature many J levels are populated.\n"
-      "The level with maximum population is J_max ~ sqrt(kT/2hcB) - 1/2." },
 };
 
 static const KeywordEntry kws_spectroscopy[] = {
@@ -2030,7 +1865,7 @@ static const KeywordEntry kws_spectroscopy[] = {
       "IR absorption." },
 };
 
-/* ---------- TOPIC 4: HYDROGEN ATOM ---------- */
+/* ---------- TOPIC 4: HYDROGEN ATOM (LECTURE 9) ---------- */
 
 static const char *desc_hydrogen =
     "The Bohr model reproduces hydrogen energies but not wavefunctions. "
@@ -2072,7 +1907,7 @@ static const EquationEntry eqs_hydrogen[] = {
     { "Radial Probability Distribution",
       eq_radial_prob_def,
       "P_1s(r) dr : probability of finding electron in shell [r, r+dr]\n"
-      "psi_1s*    : complex conjugate of the 1s wavefunction\n"
+      "psi_1s* : complex conjugate of the 1s wavefunction\n"
       "psi_1s     : 1s wavefunction\n"
       "r^2 dr     : Jacobian from spherical volume element dV = 4pi r^2 dr\n"
       "This is the definitional form; substituting psi_1s gives the\n"
@@ -2254,6 +2089,19 @@ static const EquationEntry eqs_multielectron[] = {
       "2s_b  : 2s orbital with beta spin\n"
       "det|...|: each column is a spin-orbital; rows are electrons.\n"
       "Swapping two electrons (rows) flips the sign -> Pauli." },
+    { "1s Orbital with Z",
+      eq_phi1s_Z,
+      "phi_1s(i) : 1s atomic orbital evaluated for electron i\n"
+      "Z         : nuclear charge (1 for H, 2 for He, etc.)\n"
+      "a0        : Bohr radius (~52.9 pm)\n"
+      "r_i       : electron i distance from nucleus\n"
+      "Used in LCAO-MO theory for H2 and H2^-." },
+    { "Electron Separation Vector",
+      eq_electron_separation,
+      "r_1, r_2 : position vectors of electrons 1 and 2\n"
+      "R        : vector between the two electrons\n"
+      "Appears in the electron-electron repulsion term\n"
+      "e^2 / (4 pi eps0 |r_1 - r_2|)." },
     { "Overlap Integral (symmetric)",
       eq_overlap_symmetric,
       "S_12 = <phi_1s(1)|phi_1s(2)> = <phi_1s(2)|phi_1s(1)>\n"
@@ -2269,29 +2117,6 @@ static const EquationEntry eqs_multielectron[] = {
       "Apply to sp, sp2, sp3 hybrids on any atom.  Together\n"
       "with the equal-contribution rule these constraints\n"
       "uniquely determine all mixing coefficients." },
-    { "phi_1s Wavefunction (explicit)",
-      eq_phi_1s_explicit,
-      "phi_1s(1) : hydrogen-like 1s AO evaluated at electron 1\n"
-      "Z         : nuclear charge (Z=1 for hydrogen)\n"
-      "a_0       : Bohr radius (~52.9 pm)\n"
-      "r_1       : distance of electron 1 from the nucleus\n"
-      "Same form for phi_1s(2) with r_2 instead of r_1.\n"
-      "Used to evaluate the overlap integral S_12 explicitly." },
-    { "Inter-electron Displacement",
-      eq_r1_r2_R,
-      "r_1 : position of electron 1 (from the nucleus)\n"
-      "r_2 : position of electron 2 (from the nucleus)\n"
-      "R   : displacement vector between the two electrons\n"
-      "Appears in the electron-electron repulsion term\n"
-      "e^2 / (4 pi eps0 |r_1 - r_2|) of the He Hamiltonian." },
-    { "Slater Det. (Be, explicit rows)",
-      eq_slater_matrix,
-      "N = 4 electrons; e = 4 (electron count label)\n"
-      "Prefactor 1/sqrt(4!) = 1/sqrt(24) normalises Psi.\n"
-      "Row label e=1..4 means: evaluate each spin-orbital\n"
-      "(1s_a, 1s_b, 2s_a, 2s_b) for electrons 1, 2, 3, 4.\n"
-      "Swapping any two rows flips the sign -> Pauli exclusion.\n"
-      "Two identical spin-orbitals (columns) -> det = 0." },
 };
 
 static const KeywordEntry kws_multielectron[] = {
@@ -2360,7 +2185,48 @@ static const KeywordEntry kws_multielectron[] = {
       "the full hybrid set: c1^2 + c5^2 = 1 and c2^2 + c6^2 = 1." },
 };
 
-/* ---------- TOPIC 6: STATISTICAL MECHANICS ---------- */
+/* =========================================================================
+ * §4  TopicContent AGGREGATES + LOOKUP HELPERS
+ * ========================================================================= */
+
+/* Short descriptions for topics that did not receive full paragraph text */
+static const char *desc_pib =
+    "A particle confined to a 1D box of length L has quantized energy "
+    "levels: the wavefunction must vanish at the walls, forcing a "
+    "discrete set of standing waves indexed by n = 1, 2, 3, ...\n\n"
+    "Zero-point energy (E_1 > 0) means the particle cannot be at rest. "
+    "The n-th wavefunction has (n-1) interior nodes. The same idea "
+    "extends to 2D and 3D boxes, and underlies the band theory of "
+    "solids.\n\n"
+    "The 1D-box formula is also used to estimate HOMO and LUMO energies "
+    "of conjugated " G_PI "-systems. Combining E_n with the Boltzmann "
+    "distribution gives the thermal population of each level at "
+    "temperature T: the ratio p_LUMO / p_HOMO = exp(-" G_DELTA_U "E / kT).";
+
+static const char *desc_commutators =
+    "Two quantum observables can be simultaneously known only if their "
+    "operators commute. The commutator [A_hat, B_hat] measures how far "
+    "they are from commuting.\n\n"
+    "Non-commuting operators yield a lower bound on the product of "
+    "their uncertainties. For position and momentum this is the "
+    "Heisenberg Uncertainty Principle.\n\n"
+    "Electron spin is an intrinsic angular momentum with no classical "
+    "analogue. Spin-1/2 particles have two basis states (" G_ALPHA " and "
+    G_BETA "), demonstrated by the Stern-Gerlach experiment.";
+
+static const char *desc_oscillator =
+    "The quantum harmonic oscillator has equally spaced energy levels "
+    "separated by " G_OMEGA " (with the reduced Planck constant " G_OMEGA
+    " factor); its wavefunctions are Hermite polynomials modulated by a "
+    "Gaussian envelope.\n\n"
+    "The rigid rotor models a diatomic molecule as two fixed-distance "
+    "masses rotating in space. Its levels depend on the moment of "
+    "inertia I and the quantum number J.\n\n"
+    "Together these two models -- oscillator for vibration, rotor for "
+    "rotation -- describe most of the vibrational and rotational "
+    "behaviour of diatomic molecules.";
+
+/* ---------- TOPIC 6: STATISTICAL MECHANICS (LECTURE 13) ---------- */
 
 static const char *desc_statmech =
     "Statistical mechanics connects the microscopic energy levels of "
@@ -2466,46 +2332,6 @@ static const KeywordEntry kws_statmech[] = {
       "the system always relaxes back to equilibrium." },
 };
 
-/* =========================================================================
- * §4  TopicContent AGGREGATES + LOOKUP HELPERS
- * ========================================================================= */
-
-static const char *desc_pib =
-    "A particle confined to a 1D box of length L has quantized energy "
-    "levels: the wavefunction must vanish at the walls, forcing a "
-    "discrete set of standing waves indexed by n = 1, 2, 3, ...\n\n"
-    "Zero-point energy (E_1 > 0) means the particle cannot be at rest. "
-    "The n-th wavefunction has (n-1) interior nodes. The same idea "
-    "extends to 2D and 3D boxes, and underlies the band theory of "
-    "solids.\n\n"
-    "The 1D-box formula is also used to estimate HOMO and LUMO energies "
-    "of conjugated " G_PI "-systems. Combining E_n with the Boltzmann "
-    "distribution gives the thermal population of each level at "
-    "temperature T: the ratio p_LUMO / p_HOMO = exp(-" G_DELTA_U "E / kT).";
-
-static const char *desc_commutators =
-    "Two quantum observables can be simultaneously known only if their "
-    "operators commute. The commutator [A_hat, B_hat] measures how far "
-    "they are from commuting.\n\n"
-    "Non-commuting operators yield a lower bound on the product of "
-    "their uncertainties. For position and momentum this is the "
-    "Heisenberg Uncertainty Principle.\n\n"
-    "Electron spin is an intrinsic angular momentum with no classical "
-    "analogue. Spin-1/2 particles have two basis states (" G_ALPHA " and "
-    G_BETA "), demonstrated by the Stern-Gerlach experiment.";
-
-static const char *desc_oscillator =
-    "The quantum harmonic oscillator has equally spaced energy levels "
-    "separated by " G_OMEGA " (with the reduced Planck constant " G_OMEGA
-    " factor); its wavefunctions are Hermite polynomials modulated by a "
-    "Gaussian envelope.\n\n"
-    "The rigid rotor models a diatomic molecule as two fixed-distance "
-    "masses rotating in space. Its levels depend on the moment of "
-    "inertia I and the quantum number J.\n\n"
-    "Together these two models -- oscillator for vibration, rotor for "
-    "rotation -- describe most of the vibrational and rotational "
-    "behaviour of diatomic molecules.";
-
 /* Topic titles (also used in the menu) */
 static const char *topic_titles[NUM_TOPICS] = {
     "Particle in a Box",
@@ -2521,7 +2347,7 @@ static const char *topic_titles[NUM_TOPICS] = {
 static const TopicContent topic_table[NUM_TOPICS] = {
     {   /* 0 */
         .title             = "Particle in a Box",
-        .description_block = NULL,
+        .description_block = NULL,                          /* set below */
         .equations         = eqs_pib,
         .num_equations     = (int)(sizeof(eqs_pib) / sizeof(eqs_pib[0])),
         .keywords          = kws_pib,
@@ -2589,6 +2415,9 @@ static const TopicContent topic_table[NUM_TOPICS] = {
     },
 };
 
+/* Because C cannot use aggregate initialisers to link to function-local
+ * static strings cleanly, we patch description_block pointers at the
+ * point of lookup below. */
 const TopicContent *topic_content(TopicID id)
 {
     static TopicContent out;
@@ -2667,6 +2496,10 @@ void submenu_draw(const SubMenuScreen *sm)
 
 int submenu_handle_key(SubMenuScreen *sm, key_event_t ev)
 {
+    /* Submenu has only 3 items so long-press jump is unnecessary, but we
+     * honour the v5 LEFT/RIGHT single-step rule for UX symmetry with the
+     * main menu.  LEFT/RIGHT only react to KEYEV_DOWN; auto-repeat events
+     * are ignored.  RIGHT at the last item is a no-op. */
     if (ev.type != KEYEV_DOWN && ev.type != KEYEV_HOLD)
         return 0;
 
@@ -2684,11 +2517,11 @@ int submenu_handle_key(SubMenuScreen *sm, key_event_t ev)
         if (ev.type == KEYEV_DOWN && sm->sel < NUM_SUBTOPICS - 1) sm->sel++;
         return 0;
     case KEY_EXE:
-        return 1;   /* open selected subtopic */
+        return 1;
     case KEY_EXIT:
-        return 2;   /* back to main menu */
+        return 2;
     case KEY_MENU:
-        return 3;   /* quit add-in */
+        return 3;
     default:
         return 0;
     }
@@ -2696,6 +2529,15 @@ int submenu_handle_key(SubMenuScreen *sm, key_event_t ev)
 
 /* =========================================================================
  * §6  TOPIC CONTENT SCREEN IMPLEMENTATION
+ * =========================================================================
+ *
+ * Strategy: the draw function does a single pass that both measures and
+ * (optionally) renders content.  Everything above the viewport is
+ * skipped; everything below is short-circuited.  content_h is accumulated
+ * so that scroll clamping is always correct.
+ *
+ * The math-node pool is reset once at the start of each draw so AST
+ * trees for previous equations are discarded cleanly.
  * ========================================================================= */
 
 void topic_init(TopicScreen *ts, TopicID topic, SubtopicID subtopic)
@@ -2704,29 +2546,26 @@ void topic_init(TopicScreen *ts, TopicID topic, SubtopicID subtopic)
     ts->subtopic  = subtopic;
     ts->scroll_y  = 0;
     ts->content_h = 0;
-    ts->held_key   = 0;
+    ts->held_key  = 0;
     ts->held_count = 0;
-    ts->jumped     = 0;
+    ts->jumped    = 0;
 }
 
-/* -----------------------------------------------------------------------
- * draw_heading — accent bar with label (draw only, no measure variant)
- * ----------------------------------------------------------------------- */
-static int draw_heading(const char *label, int x, int y, int accent)
+/* Section heading block */
+static int draw_heading(const char *text, int x, int y, int color)
 {
-    drect(x, y, x + SCREEN_W - CONTENT_PAD * 2 - 1,
-          y + HEADING_H_LOCAL - 1, accent);
-    dtext(x + 4, y + 2, COL_HEADER_FG, label);
+    dtext(x, y, color, text);
+    /* Thin underline */
+    drect(x, y + HEADING_H_LOCAL - 3,
+          SCREEN_W - CONTENT_PAD, y + HEADING_H_LOCAL - 3, color);
     return HEADING_H_LOCAL + 2;
 }
 
-/* -----------------------------------------------------------------------
- * draw_descriptions — render the topic's description_block paragraph
- * ----------------------------------------------------------------------- */
+/* ---------- Descriptions view ---------- */
 static int draw_descriptions(const TopicContent *tc, int x, int y, int max_w)
 {
     int cy = y;
-    cy += draw_heading("Description", x, cy, COL_ACCENT);
+    cy += draw_heading("Overview", x, cy, COL_ACCENT);
     cy += 4;
     cy = draw_wrapped(tc->description_block, x, cy, max_w,
                       COL_ITEM_FG, 1);
@@ -2736,9 +2575,169 @@ static int draw_descriptions(const TopicContent *tc, int x, int y, int max_w)
 static int measure_descriptions(const TopicContent *tc, int max_w)
 {
     int cy = 0;
-    cy += HEADING_H_LOCAL + 2 + 4;
-    cy = draw_wrapped(tc->description_block, 0, cy, max_w, 0, 0);
+    cy += HEADING_H_LOCAL + 2;
+    cy += 4;
+    cy = draw_wrapped(tc->description_block, 0, cy, max_w,
+                      0, 0);
     return cy;
+}
+
+/* ==========================================================================
+ * §6.5 - DYNAMIC EQUATION WRAPPING (v5)
+ * ==========================================================================
+ *
+ * For long equations whose laid-out width exceeds the available content
+ * area (e.g. the molecular Hamiltonian), break the top-level row at
+ * mathematical operators (=, +, -) and render across multiple lines.
+ *
+ * Each line beyond the first starts with a "..." continuation marker,
+ * and each line that has a successor ends with a "..." marker, so the
+ * user can visually trace the break.
+ *
+ * If the input is not a MATH_ROW (e.g. a single fraction or sandwich)
+ * or even after splitting one chunk is still wider than max_w, we fall
+ * back to the v4 strategy: render_force_tier(FONT_SMALL) + re-layout.
+ * ========================================================================== */
+
+/* True if the node is a TEXT node containing one of the operator chars
+ * we are willing to break BEFORE. */
+static int is_break_operator(const MathNode *n)
+{
+    if (!n) return 0;
+    if (n->type != MATH_TEXT) return 0;
+    const char *s = n->d.leaf.text;
+    /* Strip leading whitespace */
+    while (*s == ' ') s++;
+    /* Empty or longer than 2 chars (e.g. " = ") -- we just look for the
+     * presence of the operator character. */
+    return (*s == '=' || *s == '+' || *s == '-');
+}
+
+/* Build a fresh MATH_ROW from `count` children pulled out of the source
+ * row [src_children + start ... src_children + end-1], optionally
+ * prefixed with a "..." node and/or flow with one. */
+static MathNode *build_row_chunk(MathNode **src, int start, int end,
+                                 int prefix_ellipsis, int suffix_ellipsis)
+{
+    MathNode *kids[MAX_ROW_CHILDREN];
+    int       n = 0;
+
+    if (prefix_ellipsis && n < MAX_ROW_CHILDREN) {
+        kids[n++] = math_text("... ");
+    }
+    for (int i = start; i < end && n < MAX_ROW_CHILDREN; i++) {
+        kids[n++] = src[i];
+    }
+    if (suffix_ellipsis && n < MAX_ROW_CHILDREN) {
+        kids[n++] = math_text(" ...");
+    }
+    return math_row(kids, n);
+}
+
+/* Render the equation tree, wrapping rows that exceed max_w.
+ * Returns total height consumed (sum of per-line heights + small gap).
+ *
+ * `draw == 0` => measurement only (used by the height-pass before scroll).
+ *
+ * NOTE: this function may allocate from the math node pool (for the
+ * chunk rows it constructs).  Callers should reset the pool before
+ * the parent draw pass that calls this.
+ */
+int render_equation_wrapped(MathNode *root, int x, int start_y,
+                             int max_w, int draw)
+{
+    if (!root) return 0;
+
+    int cy = start_y;
+
+    /* Lay out once to get widths for every node. */
+    render_layout(root);
+
+    /* Fast path: equation already fits */
+    if (root->layout.w <= max_w) {
+        if (draw) render_draw(root, x, cy);
+        return root->layout.h;
+    }
+
+    /* If root isn't a row we cannot meaningfully split.  Fall back to
+     * font-tier demotion (the v4 strategy). */
+    if (root->type != MATH_ROW) {
+        render_force_tier(root, FONT_SMALL);
+        render_layout(root);
+        if (draw) {
+            int ex = x;
+            render_draw(root, ex, cy);
+        }
+        return root->layout.h;
+    }
+
+    /* Walk the row's children, accumulating width.  Break BEFORE an
+     * operator child whenever the running width would overflow. */
+    MathNode **kids = root->d.row.children;
+    int        nkids = root->d.row.count;
+    int        gap   = 2;     /* ROW_GAP - matches render.c constant */
+    int        chunk_start = 0;
+    int        running_w   = 0;
+    int        last_break  = 0;          /* last index where a break is OK */
+    int        first_chunk = 1;
+
+    for (int i = 0; i < nkids; i++) {
+        MathNode *child = kids[i];
+        if (!child) continue;
+        int cw = child->layout.w + (i > chunk_start ? gap : 0);
+
+        /* If this child is an operator AND we already have content in
+         * the current chunk, mark this as a candidate break point. */
+        if (is_break_operator(child) && i > chunk_start) {
+            last_break = i;
+        }
+
+        /* Reserve room for the trailing "..." (~ 28 px in body font). */
+        int reserve = 28;
+
+        if (running_w + cw > max_w - reserve && last_break > chunk_start) {
+            /* Flush chunk_start..last_break-1 as one rendered row, with
+             * suffix "..." (and prefix "..." if not the first chunk). */
+            MathNode *chunk = build_row_chunk(kids, chunk_start, last_break,
+                                              !first_chunk, 1);
+            if (chunk) {
+                render_layout(chunk);
+                if (chunk->layout.w > max_w) {
+                    /* Single chunk still too wide -- demote */
+                    render_force_tier(chunk, FONT_SMALL);
+                    render_layout(chunk);
+                }
+                if (draw) render_draw(chunk, x, cy);
+                cy += chunk->layout.h + 2;
+            }
+            first_chunk = 0;
+            chunk_start = last_break;
+            running_w   = 0;
+            last_break  = chunk_start;
+            /* Re-evaluate this child against the new chunk */
+            i = chunk_start - 1;
+            continue;
+        }
+
+        running_w += cw;
+    }
+
+    /* Flush the final chunk (no trailing "...") */
+    if (chunk_start < nkids) {
+        MathNode *chunk = build_row_chunk(kids, chunk_start, nkids,
+                                          !first_chunk, 0);
+        if (chunk) {
+            render_layout(chunk);
+            if (chunk->layout.w > max_w) {
+                render_force_tier(chunk, FONT_SMALL);
+                render_layout(chunk);
+            }
+            if (draw) render_draw(chunk, x, cy);
+            cy += chunk->layout.h + 2;
+        }
+    }
+
+    return cy - start_y;
 }
 
 /* ---------- Equations view ---------- */
@@ -2757,6 +2756,15 @@ static int draw_equations(const TopicContent *tc, int x, int y, int max_w,
         if (draw) dtext(x, cy, COL_ACCENT, eq->label);
         cy += BODY_LINE_H + 2;
 
+        /* Render the math expression with dynamic wrapping (v5).
+         *
+         * If the equation is wider than the available content width
+         * (typically the molecular Hamiltonian), render_equation_wrapped()
+         * splits it at the most recent operator (=, +, -) and renders
+         * across multiple lines with "..." continuation markers.  When
+         * splitting is impossible (non-row tree, or even one chunk
+         * still too wide) it falls back to FONT_SMALL demotion.
+         */
         if (eq->builder) {
             MathNode *tree = eq->builder();
             if (tree) {
@@ -2825,6 +2833,7 @@ void topic_draw(TopicScreen *ts)
                                                    "Keywords";
     char header_buf[80];
     int n = 0;
+    /* Manual copy rather than snprintf to avoid libc surprises on sh-elf */
     const char *tt = topic_title(ts->topic);
     while (*tt && n < 40) header_buf[n++] = *tt++;
     header_buf[n++] = ' ';
@@ -2857,7 +2866,9 @@ void topic_draw(TopicScreen *ts)
         break;
     }
 
-    render_pool_reset();
+    /* For accurate scroll clamping, compute the total height once,
+     * independently of the viewport-based partial draw. */
+    render_pool_reset();   /* equations may have allocated for measure */
     int total = 0;
     switch (ts->subtopic) {
     case SUBTOPIC_DESCRIPTIONS:
@@ -2874,6 +2885,7 @@ void topic_draw(TopicScreen *ts)
     }
     ts->content_h = (total > content_h) ? total : content_h;
 
+    /* Footer hint (draw over any overflowing text) */
     int fy = SCREEN_H - FOOTER_H;
     drect(0, fy, SCREEN_W - 1, SCREEN_H - 1, COL_HEADER_BG);
     if (ts->content_h > SCREEN_H - HEADER_H - FOOTER_H) {
@@ -2887,9 +2899,12 @@ void topic_draw(TopicScreen *ts)
 
 int topic_handle_key(TopicScreen *ts, key_event_t ev)
 {
+    /* v5: long-press UP/DOWN jumps to top/bottom of content;
+     * LEFT/RIGHT scroll one line on KEYEV_DOWN only (no auto-repeat). */
     if (ev.type != KEYEV_DOWN && ev.type != KEYEV_HOLD)
         return 0;
 
+    /* Long-press tracking */
     if (ev.type == KEYEV_DOWN) {
         ts->held_key   = ev.key;
         ts->held_count = 0;
@@ -2937,7 +2952,7 @@ int topic_handle_key(TopicScreen *ts, key_event_t ev)
         return 0;
     case KEY_RIGHT:
         if (ev.type == KEYEV_DOWN) {
-            if (ts->scroll_y < limit) {
+            if (ts->scroll_y < limit) {   /* no-op at bottom */
                 ts->scroll_y += 18;
                 if (ts->scroll_y > limit) ts->scroll_y = limit;
             }
