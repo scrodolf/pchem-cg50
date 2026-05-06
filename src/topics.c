@@ -389,6 +389,67 @@ static MathNode *eq_spin_squared(void)
     return row_of(parts, 5);
 }
 
+/* L = r x p = I omega */
+static MathNode *eq_ang_mom_def(void)
+{
+    MathNode *parts[] = {
+        math_text("L = r x p = I"),
+        math_symbol("omega")
+    };
+    return row_of(parts, 2);
+}
+
+/* |alpha> = (1,0)^T  |beta> = (0,1)^T */
+static MathNode *eq_spin_states(void)
+{
+    MathNode *ket_a_k[] = { math_text("|"), math_symbol("alpha"), math_text(">") };
+    MathNode *ket_b_k[] = { math_text("|"), math_symbol("beta"),  math_text(">") };
+    MathNode *parts[] = {
+        row_of(ket_a_k, 3), math_text(" = (1,0)^T  "),
+        row_of(ket_b_k, 3), math_text(" = (0,1)^T")
+    };
+    return row_of(parts, 4);
+}
+
+/* L_hat_z |alpha> = (hbar/2) |alpha> */
+static MathNode *eq_spin_up_eig(void)
+{
+    MathNode *Lz       = math_hat(math_subscript(math_text("L"), math_text("z")));
+    MathNode *half     = math_fraction(math_bar(math_text("h")), math_number("2"));
+    MathNode *ket_k[]  = { math_text("|"), math_symbol("alpha"), math_text(">") };
+    MathNode *ket2_k[] = { math_text("|"), math_symbol("alpha"), math_text(">") };
+    MathNode *parts[]  = {
+        Lz, row_of(ket_k, 3), math_text(" = "), half, row_of(ket2_k, 3)
+    };
+    return row_of(parts, 5);
+}
+
+/* L_hat_z |beta> = -(hbar/2) |beta> */
+static MathNode *eq_spin_down_eig(void)
+{
+    MathNode *Lz           = math_hat(math_subscript(math_text("L"), math_text("z")));
+    MathNode *nhalf_num_k[] = { math_text("-"), math_bar(math_text("h")) };
+    MathNode *nhalf        = math_fraction(row_of(nhalf_num_k, 2), math_number("2"));
+    MathNode *ket_k[]      = { math_text("|"), math_symbol("beta"), math_text(">") };
+    MathNode *ket2_k[]     = { math_text("|"), math_symbol("beta"), math_text(">") };
+    MathNode *parts[]      = {
+        Lz, row_of(ket_k, 3), math_text(" = "), nhalf, row_of(ket2_k, 3)
+    };
+    return row_of(parts, 5);
+}
+
+/* omega = (r x V) / r^2 */
+static MathNode *eq_angular_velocity(void)
+{
+    MathNode *r2      = math_superscript(math_text("r"), math_number("2"));
+    MathNode *parts[] = {
+        math_symbol("omega"),
+        math_text(" = "),
+        math_fraction(math_text("r x V"), r2)
+    };
+    return row_of(parts, 3);
+}
+
 /* Heisenberg:  Delta x  Delta p  >=  hbar/2 */
 static MathNode *eq_uncertainty(void)
 {
@@ -437,6 +498,16 @@ static MathNode *eq_rotor_energy(void)
 }
 
 /* ----- TOPIC 3: Diatomic Spectroscopy (FULL LECTURE 8 CONTENT) ----- */
+
+/* E = h nu  (Planck relation) */
+static MathNode *eq_planck_energy(void)
+{
+    MathNode *parts[] = {
+        math_text("E = h"),
+        math_symbol("nu")
+    };
+    return row_of(parts, 2);
+}
 
 /* v * lambda = c  (unit relation) */
 static MathNode *eq_vl_c(void)
@@ -615,6 +686,48 @@ static MathNode *eq_bohr_radius(void)
         math_subscript(math_text("a"), math_number("0")),
         math_text(" = "),
         math_fraction(row_of(num_k, 4), row_of(den_k, 2))
+    };
+    return row_of(parts, 3);
+}
+
+/* Delta E = (-2.180e-18 J)(1/n1^2 - 1/n2^2) */
+static MathNode *eq_rydberg_energy(void)
+{
+    MathNode *n1_sq = math_superscript(
+        math_subscript(math_text("n"), math_number("1")),
+        math_number("2"));
+    MathNode *n2_sq = math_superscript(
+        math_subscript(math_text("n"), math_number("2")),
+        math_number("2"));
+    MathNode *bracket_k[] = {
+        math_fraction(math_number("1"), n1_sq),
+        math_text(" - "),
+        math_fraction(math_number("1"), n2_sq)
+    };
+    MathNode *DE_k[]  = { math_symbol("Delta"), math_text("E") };
+    MathNode *parts[] = {
+        row_of(DE_k, 2),
+        math_text(" = (-2.180e-18 J)"),
+        math_paren(row_of(bracket_k, 3))
+    };
+    return row_of(parts, 3);
+}
+
+/* R_y = e^4 m_e / (8 eps0^2 h^2) */
+static MathNode *eq_rydberg_constant(void)
+{
+    MathNode *e4      = math_superscript(math_text("e"), math_number("4"));
+    MathNode *me      = math_subscript(math_text("m"), math_text("e"));
+    MathNode *num_k[] = { e4, me };
+    MathNode *eps0_sq = math_superscript(
+        math_subscript(math_symbol("epsilon"), math_number("0")),
+        math_number("2"));
+    MathNode *h2      = math_superscript(math_text("h"), math_number("2"));
+    MathNode *den_k[] = { math_number("8"), eps0_sq, h2 };
+    MathNode *parts[] = {
+        math_subscript(math_text("R"), math_text("y")),
+        math_text(" = "),
+        math_fraction(row_of(num_k, 2), row_of(den_k, 3))
     };
     return row_of(parts, 3);
 }
@@ -1133,6 +1246,31 @@ static MathNode *eq_debroglie_ke(void)
     return row_of(parts, 3);
 }
 
+/* p = mv = h / lambda */
+static MathNode *eq_debroglie_momentum(void)
+{
+    MathNode *parts[] = {
+        math_text("p = mv = "),
+        math_fraction(math_text("h"), math_symbol("lambda"))
+    };
+    return row_of(parts, 2);
+}
+
+/* k = sqrt(2mE) / hbar = 2 pi / lambda */
+static MathNode *eq_wavevector(void)
+{
+    MathNode *inside_k[] = { math_number("2"), math_text("mE") };
+    MathNode *frac1 = math_fraction(
+        math_sqrt(row_of(inside_k, 2)),
+        math_bar(math_text("h")));
+    MathNode *two_pi_k[] = { math_number("2"), math_symbol("pi") };
+    MathNode *frac2 = math_fraction(row_of(two_pi_k, 2), math_symbol("lambda"));
+    MathNode *parts[] = {
+        math_text("k = "), frac1, math_text(" = "), frac2
+    };
+    return row_of(parts, 4);
+}
+
 /* --- Topic 2 (Harmonic Oscillator & Rotor) --- */
 
 /* Classical Kinetic Energy:  E_kin = (1/2) m v^2 */
@@ -1193,6 +1331,36 @@ static MathNode *eq_angular_frequency(void)
         math_sqrt(math_fraction(math_text("k"), math_symbol("mu")))
     };
     return row_of(parts, 3);
+}
+
+/* phi = omega t = 2 pi nu t */
+static MathNode *eq_phase_oscillation(void)
+{
+    MathNode *two_pi_nu_k[] = {
+        math_number("2"), math_symbol("pi"), math_symbol("nu")
+    };
+    MathNode *parts[] = {
+        math_symbol("phi"),
+        math_text(" = "),
+        math_symbol("omega"),
+        math_text("t = "),
+        row_of(two_pi_nu_k, 3),
+        math_text("t")
+    };
+    return row_of(parts, 6);
+}
+
+/* E = hbar^2 / (2 m r^2) */
+static MathNode *eq_orbital_ke(void)
+{
+    MathNode *hb2     = math_superscript(math_bar(math_text("h")), math_number("2"));
+    MathNode *r2      = math_superscript(math_text("r"), math_number("2"));
+    MathNode *den_k[] = { math_number("2"), math_text("m"), r2 };
+    MathNode *parts[] = {
+        math_text("E = "),
+        math_fraction(hb2, row_of(den_k, 3))
+    };
+    return row_of(parts, 2);
 }
 
 /* --- Topic 3 (Diatomic Spectroscopy) --- */
@@ -1538,6 +1706,22 @@ static const EquationEntry eqs_pib[] = {
       "m      : particle mass\n"
       "lambda : de Broglie wavelength\n"
       "Derived by substituting p = h/lambda into E = p^2/(2m)." },
+    { "de Broglie Momentum",
+      eq_debroglie_momentum,
+      "p      : momentum\n"
+      "m      : particle mass\n"
+      "v      : particle velocity\n"
+      "h      : Planck's constant\n"
+      "lambda : de Broglie wavelength\n"
+      "Unifies particle and wave descriptions: p = h/lambda." },
+    { "Wavevector k",
+      eq_wavevector,
+      "k      : wavevector (rad/m)\n"
+      "m      : particle mass\n"
+      "E      : total energy\n"
+      "hbar   : reduced Planck's constant\n"
+      "lambda : de Broglie wavelength\n"
+      "k = 2pi/lambda is the wave-mechanics form of momentum." },
 };
 
 static const KeywordEntry kws_pib[] = {
@@ -1640,6 +1824,39 @@ static const EquationEntry eqs_commutators[] = {
       "s    : spin quantum number (1/2 for electrons)\n"
       "For s=1/2: S^2 = (3/4) hbar^2.\n"
       "S^2 commutes with S_z so both are simultaneously exact." },
+    { "Angular Momentum Definition",
+      eq_ang_mom_def,
+      "L     : angular momentum vector\n"
+      "r     : position vector\n"
+      "p     : linear momentum vector\n"
+      "I     : moment of inertia\n"
+      "omega : angular velocity\n"
+      "Cross product r x p gives the vector angular momentum." },
+    { "Spin Basis States",
+      eq_spin_states,
+      "|alpha> = (1,0)^T : spin-up column vector\n"
+      "|beta>  = (0,1)^T : spin-down column vector\n"
+      "These two states span the complete spin-1/2 Hilbert space;\n"
+      "any spin state is a linear combination of alpha and beta." },
+    { "Spin-up Eigenvalue",
+      eq_spin_up_eig,
+      "L_hat_z : z-component of spin operator\n"
+      "|alpha> : spin-up eigenstate\n"
+      "hbar    : reduced Planck's constant\n"
+      "Eigenvalue is +hbar/2 for the spin-up (alpha) state." },
+    { "Spin-down Eigenvalue",
+      eq_spin_down_eig,
+      "L_hat_z : z-component of spin operator\n"
+      "|beta>  : spin-down eigenstate\n"
+      "hbar    : reduced Planck's constant\n"
+      "Eigenvalue is -hbar/2 for the spin-down (beta) state." },
+    { "Angular Velocity",
+      eq_angular_velocity,
+      "omega : angular velocity (rad/s)\n"
+      "r     : position vector magnitude\n"
+      "V     : linear velocity\n"
+      "r^2   : squared radial distance\n"
+      "Relates linear and rotational motion via cross product." },
 };
 
 static const KeywordEntry kws_commutators[] = {
@@ -1701,6 +1918,20 @@ static const EquationEntry eqs_oscillator[] = {
       "mu    : reduced mass\n"
       "Substituting into the force equation yields ddot_x = -omega^2 x,\n"
       "confirming simple harmonic motion with frequency omega." },
+    { "Phase Oscillation",
+      eq_phase_oscillation,
+      "phi   : phase of oscillation (radians)\n"
+      "omega : angular frequency (rad/s)\n"
+      "t     : time\n"
+      "nu    : frequency (Hz)\n"
+      "Phase grows linearly with time at rate omega = 2 pi nu." },
+    { "Orbital Kinetic Energy",
+      eq_orbital_ke,
+      "E    : rotational kinetic energy\n"
+      "hbar : reduced Planck's constant\n"
+      "m    : particle mass\n"
+      "r    : orbital radius\n"
+      "Kinetic energy of a particle constrained to circular motion." },
 };
 
 static const KeywordEntry kws_oscillator[] = {
@@ -1741,6 +1972,12 @@ static const char *desc_spectroscopy =
     "either branch gives the bond length directly.";
 
 static const EquationEntry eqs_spectroscopy[] = {
+    { "Planck Relation",
+      eq_planck_energy,
+      "E  : photon energy (J)\n"
+      "h  : Planck's constant (6.626e-34 J*s)\n"
+      "nu : photon frequency (Hz)\n"
+      "Fundamental relation between photon energy and frequency." },
     { "Unit Relation v*lambda = c",
       eq_vl_c,
       "v      : wave speed (c in vacuum: 3.0e8 m/s)\n"
@@ -1931,6 +2168,21 @@ static const EquationEntry eqs_hydrogen[] = {
       "The 'dr' is the radial shell element; P_1s(r) dr is\n"
       "the full probability element to be extremised.\n"
       "Solving gives r_mp = a0 for the hydrogen 1s orbital." },
+    { "Hydrogen Energy Levels",
+      eq_rydberg_energy,
+      "Delta E : energy of the emitted or absorbed photon\n"
+      "n1      : initial principal quantum number\n"
+      "n2      : final principal quantum number\n"
+      "-2.180e-18 J : Rydberg energy constant E_h/2\n"
+      "Predicts all hydrogen spectral lines (Lyman, Balmer, etc.)." },
+    { "Rydberg Constant",
+      eq_rydberg_constant,
+      "R_y     : Rydberg energy constant (~= 2.180e-18 J)\n"
+      "e       : elementary charge\n"
+      "m_e     : electron rest mass\n"
+      "epsilon0: vacuum permittivity\n"
+      "h       : Planck's constant\n"
+      "Fundamental constant setting the hydrogen energy scale." },
 };
 
 static const KeywordEntry kws_hydrogen[] = {
