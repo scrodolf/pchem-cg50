@@ -1559,6 +1559,142 @@ static MathNode *eq_hybrid_constraints(void)
     return row_of(parts, 3);
 }
 
+/* psi_sp2,1 = -(1/sqrt3) phi_2s + sqrt(2/3) phi_2pz */
+static MathNode *eq_sp2_psi1(void)
+{
+    MathNode *psi1    = math_subscript(math_symbol("psi"), math_text("sp2,1"));
+    MathNode *c1      = math_fraction(math_number("1"), math_sqrt(math_number("3")));
+    MathNode *c3      = math_sqrt(math_fraction(math_number("2"), math_number("3")));
+    MathNode *phi2s   = math_subscript(math_symbol("phi"), math_text("2s"));
+    MathNode *phi2pz  = math_subscript(math_symbol("phi"), math_text("2pz"));
+    MathNode *parts[] = {
+        psi1, math_text(" = -"), c1, phi2s,
+        math_text(" + "), c3, phi2pz
+    };
+    return row_of(parts, 7);
+}
+
+/* psi_sp2,2 = -(1/sqrt2) phi_2px - (1/sqrt3) phi_2s - (1/sqrt6) phi_2pz */
+static MathNode *eq_sp2_psi2(void)
+{
+    MathNode *psi2    = math_subscript(math_symbol("psi"), math_text("sp2,2"));
+    MathNode *c_half  = math_fraction(math_number("1"), math_sqrt(math_number("2")));
+    MathNode *c_3rd   = math_fraction(math_number("1"), math_sqrt(math_number("3")));
+    MathNode *c_6th   = math_fraction(math_number("1"), math_sqrt(math_number("6")));
+    MathNode *phi2px  = math_subscript(math_symbol("phi"), math_text("2px"));
+    MathNode *phi2s   = math_subscript(math_symbol("phi"), math_text("2s"));
+    MathNode *phi2pz  = math_subscript(math_symbol("phi"), math_text("2pz"));
+    MathNode *parts[] = {
+        psi2, math_text(" = -"), c_half, phi2px,
+        math_text(" - "), c_3rd, phi2s,
+        math_text(" - "), c_6th, phi2pz
+    };
+    return row_of(parts, 10);
+}
+
+/* psi_sp2,3 = +(1/sqrt2) phi_2px - (1/sqrt3) phi_2s - (1/sqrt6) phi_2pz */
+static MathNode *eq_sp2_psi3(void)
+{
+    MathNode *psi3    = math_subscript(math_symbol("psi"), math_text("sp2,3"));
+    MathNode *c_half  = math_fraction(math_number("1"), math_sqrt(math_number("2")));
+    MathNode *c_3rd   = math_fraction(math_number("1"), math_sqrt(math_number("3")));
+    MathNode *c_6th   = math_fraction(math_number("1"), math_sqrt(math_number("6")));
+    MathNode *phi2px  = math_subscript(math_symbol("phi"), math_text("2px"));
+    MathNode *phi2s   = math_subscript(math_symbol("phi"), math_text("2s"));
+    MathNode *phi2pz  = math_subscript(math_symbol("phi"), math_text("2pz"));
+    MathNode *parts[] = {
+        psi3, math_text(" = +"), c_half, phi2px,
+        math_text(" - "), c_3rd, phi2s,
+        math_text(" - "), c_6th, phi2pz
+    };
+    return row_of(parts, 10);
+}
+
+/* psi_OH,1 = N (cos(theta) phi_2pz + sin(theta) phi_2px - alpha phi_2s) */
+static MathNode *eq_oh_wf1(void)
+{
+    MathNode *psi1      = math_subscript(math_symbol("psi"), math_text("OH,1"));
+    MathNode *phi2pz    = math_subscript(math_symbol("phi"), math_text("2pz"));
+    MathNode *phi2px    = math_subscript(math_symbol("phi"), math_text("2px"));
+    MathNode *phi2s     = math_subscript(math_symbol("phi"), math_text("2s"));
+    MathNode *inner_k[] = {
+        math_text("cos"), math_symbol("theta"), phi2pz,
+        math_text(" + "),
+        math_text("sin"), math_symbol("theta"), phi2px,
+        math_text(" - "),
+        math_symbol("alpha"), phi2s
+    };
+    MathNode *parts[] = {
+        psi1, math_text(" = N"),
+        math_paren(row_of(inner_k, 10))
+    };
+    return row_of(parts, 3);
+}
+
+/* psi_OH,2 = N (cos(theta) phi_2pz - sin(theta) phi_2px - alpha phi_2s) */
+static MathNode *eq_oh_wf2(void)
+{
+    MathNode *psi2      = math_subscript(math_symbol("psi"), math_text("OH,2"));
+    MathNode *phi2pz    = math_subscript(math_symbol("phi"), math_text("2pz"));
+    MathNode *phi2px    = math_subscript(math_symbol("phi"), math_text("2px"));
+    MathNode *phi2s     = math_subscript(math_symbol("phi"), math_text("2s"));
+    MathNode *inner_k[] = {
+        math_text("cos"), math_symbol("theta"), phi2pz,
+        math_text(" - "),
+        math_text("sin"), math_symbol("theta"), phi2px,
+        math_text(" - "),
+        math_symbol("alpha"), phi2s
+    };
+    MathNode *parts[] = {
+        psi2, math_text(" = N"),
+        math_paren(row_of(inner_k, 10))
+    };
+    return row_of(parts, 3);
+}
+
+/* cos(2 theta) = -alpha^2 */
+static MathNode *eq_oh_orthogonality(void)
+{
+    MathNode *two_theta_k[] = { math_number("2"), math_symbol("theta") };
+    MathNode *a2      = math_superscript(math_symbol("alpha"), math_number("2"));
+    MathNode *parts[] = {
+        math_text("cos"),
+        math_paren(row_of(two_theta_k, 2)),
+        math_text(" = -"),
+        a2
+    };
+    return row_of(parts, 4);
+}
+
+/* alpha = sqrt(-cos(104.5 deg)) ~= 0.500 */
+static MathNode *eq_oh_alpha(void)
+{
+    MathNode *cos_inner_k[] = {
+        math_text("-cos"),
+        math_paren(math_text("104.5"))
+    };
+    MathNode *parts[] = {
+        math_symbol("alpha"),
+        math_text(" = "),
+        math_sqrt(row_of(cos_inner_k, 2)),
+        math_text(" ~= 0.500")
+    };
+    return row_of(parts, 4);
+}
+
+/* N = 1 / sqrt(1 + alpha^2)  ~= 0.894 */
+static MathNode *eq_oh_normalization(void)
+{
+    MathNode *a2      = math_superscript(math_symbol("alpha"), math_number("2"));
+    MathNode *den_k[] = { math_number("1"), math_text(" + "), a2 };
+    MathNode *parts[] = {
+        math_text("N = "),
+        math_fraction(math_number("1"), math_sqrt(row_of(den_k, 3))),
+        math_text(" ~= 0.894")
+    };
+    return row_of(parts, 3);
+}
+
 /* --- Topic 4 (Hydrogen Atom) --- */
 
 /* Radial Probability Distribution (definitional form):
@@ -2369,6 +2505,55 @@ static const EquationEntry eqs_multielectron[] = {
       "Apply to sp, sp2, sp3 hybrids on any atom.  Together\n"
       "with the equal-contribution rule these constraints\n"
       "uniquely determine all mixing coefficients." },
+    { "sp2 Orbital 1",
+      eq_sp2_psi1,
+      "psi_sp2,1 = -(1/sqrt3) phi_2s + sqrt(2/3) phi_2pz\n"
+      "c1 = 0 : px orbital does not contribute (orbital points along z)\n"
+      "c3 = sqrt(2/3) : normalization fixes the pz coefficient\n"
+      "Points along the z-axis (theta = 0 deg); purely pz + s mix." },
+    { "sp2 Orbital 2",
+      eq_sp2_psi2,
+      "psi_sp2,2 = -(1/sqrt2) phi_2px - (1/sqrt3) phi_2s - (1/sqrt6) phi_2pz\n"
+      "Points at theta = 240 deg; equal px and pz contributions with\n"
+      "opposite signs relative to orbital 1.\n"
+      "v_sp2,2 = (-1/sqrt2, -1/sqrt6) direction vector." },
+    { "sp2 Orbital 3",
+      eq_sp2_psi3,
+      "psi_sp2,3 = +(1/sqrt2) phi_2px - (1/sqrt3) phi_2s - (1/sqrt6) phi_2pz\n"
+      "Points at theta = 120 deg; mirror image of orbital 2.\n"
+      "v_sp2,3 = (+1/sqrt2, -1/sqrt6) direction vector.\n"
+      "All three sp2 orbitals are coplanar (120 deg apart)." },
+    { "OH Bond WF 1",
+      eq_oh_wf1,
+      "psi_OH,1 : wavefunction for the first OH bond in water\n"
+      "N     : normalisation constant\n"
+      "theta : half the bond angle (2theta = 104.5 deg for water)\n"
+      "alpha : s-character mixing coefficient\n"
+      "phi_2pz, phi_2px : 2p atomic orbitals on oxygen" },
+    { "OH Bond WF 2",
+      eq_oh_wf2,
+      "psi_OH,2 : wavefunction for the second OH bond in water\n"
+      "Symmetric with psi_OH,1 under reflection through the z-axis\n"
+      "(sign of the px term flips). The two orbitals are orthogonal\n"
+      "by construction when cos(2theta) = -alpha^2 is satisfied." },
+    { "OH Orthogonality",
+      eq_oh_orthogonality,
+      "Derived from <psi_OH,1|psi_OH,2> = 0 condition:\n"
+      "N^2(cos^2 theta - sin^2 theta + alpha^2) = 0\n"
+      "which simplifies to cos(2theta) = -alpha^2.\n"
+      "For water (2theta = 104.5 deg): alpha^2 = -cos(104.5) ~= 0.250." },
+    { "OH Alpha Value",
+      eq_oh_alpha,
+      "alpha : s-character coefficient for the OH bond hybrid\n"
+      "theta : half the HOH bond angle (2theta = 104.5 deg)\n"
+      "alpha = sqrt(-cos 104.5) ~= sqrt(0.250) ~= 0.500\n"
+      "Quantifies how much 2s character each OH hybrid contains." },
+    { "OH Normalization N",
+      eq_oh_normalization,
+      "N : overall normalisation constant for the OH wavefunctions\n"
+      "alpha ~= 0.500 (from the OH alpha value equation above)\n"
+      "N = 1/sqrt(1 + 0.500^2) = 1/sqrt(1.250) ~= 0.894\n"
+      "Ensures <psi_OH,1|psi_OH,1> = 1 (unit probability)." },
 };
 
 static const KeywordEntry kws_multielectron[] = {
